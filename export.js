@@ -279,13 +279,13 @@ async function exportProjectsPDF() {
           y += 1.2;
 
         } else if (item.type === 'subheading') {
-          y += 2;
-          y = guard(y, 9);
+          y += 1;
+          y = guard(y, 7);
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(10.5);
+          doc.setFontSize(9);
           doc.setTextColor(...INK);
           doc.text(item.text, colX, y);
-          y += 6.5;
+          y += 5;
 
         } else if (item.type === 'table-header' || item.type === 'table-row') {
           const colWCell = colW / Math.max(item.cells.length, 1);
@@ -373,12 +373,12 @@ async function exportProjectsPDF() {
         for (const block of p.blocks) {
 
           if (block.type === 'heading' && block.content?.trim()) {
-            y = guard(y, 16);
+            y = guard(y, 10);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10.5);
+            doc.setFontSize(9);
             doc.setTextColor(...INK);
             doc.text(block.content.trim(), M, y);
-            y += 7;
+            y += 5;
 
           } else if (block.type === 'text' && block.content) {
             const items = parseHtmlContent(block.content);
