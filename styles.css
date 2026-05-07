@@ -577,6 +577,7 @@ body.intro-done .hero-word {
 
 /* ── Projects ──────────────────────────────────────────────── */
 #projects { background: var(--bg); }
+#projects .container { position: relative; z-index: 1; }
 
 #projects .projects-grid {
   display: grid;
@@ -633,9 +634,57 @@ body.intro-done .hero-word {
 .project-image.placeholder {
   background: var(--bg-alt);
 }
+.project-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(380px circle at var(--cx, -200px) var(--cy, -200px), rgba(201,169,127,0.09), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+  z-index: 0;
+}
+.project-card:hover::before {
+  opacity: 1;
+}
 .project-card:hover {
   background: var(--surface-deep);
-  border-color: rgba(255,255,255,0.16);
+  border-color: rgba(201,169,127,0.22);
+}
+
+/* ── Projects section ambient orbs ───────────────────────── */
+#projects {
+  position: relative;
+  overflow: hidden;
+}
+.projects-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.projects-orb-a {
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(201,169,127,0.13) 0%, transparent 70%);
+  filter: blur(60px);
+  top: -120px;
+  left: -160px;
+  animation: orbDrift 22s ease-in-out infinite alternate;
+}
+.projects-orb-b {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(90,130,210,0.09) 0%, transparent 70%);
+  filter: blur(70px);
+  bottom: -80px;
+  right: -100px;
+  animation: orbDrift 28s ease-in-out infinite alternate-reverse;
+}
+@keyframes orbDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(70px, 50px) scale(1.1); }
 }
 
 .project-header {

@@ -298,6 +298,19 @@ function initCursor() {
   });
 }
 
+// ── Card spotlight ───────────────────────────────────────────
+function initCardSpotlight() {
+  const grid = document.querySelector(".projects-grid");
+  if (!grid) return;
+  grid.addEventListener("mousemove", e => {
+    const card = e.target.closest(".project-card");
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--cx", (e.clientX - rect.left) + "px");
+    card.style.setProperty("--cy", (e.clientY - rect.top)  + "px");
+  });
+}
+
 // ── Boot ─────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   renderNav();
@@ -310,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCursor();
   initModal();
   initLightbox();
+  initCardSpotlight();
   if (window.initCMS) window.initCMS();
   runIntro();
 });
