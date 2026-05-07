@@ -292,20 +292,24 @@ async function exportProjectsPDF() {
     fillBg();
     const projects = window._projects || PORTFOLIO.projects;
 
+    const CX = PW / 2; // centre x
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(14);
     doc.setTextColor(...INK);
-    doc.text('VEDHA MEREDDY', M, M + 3);
+    doc.text('VEDHA MEREDDY', CX, M + 4, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
+    doc.setCharSpace(0.4);
     doc.text(
       `Design & Engineering Portfolio  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`,
-      M, M + 9.5
+      CX, M + 10.5, { align: 'center' }
     );
+    doc.setCharSpace(0);
     rule(M + 15);
-    let y = M + 24;
+    let y = M + 18;
 
     // ── Projects ──────────────────────────────────────────────
     for (let idx = 0; idx < projects.length; idx++) {
@@ -452,11 +456,16 @@ async function exportProjectsPDF() {
         }
       }
 
-      // Page number
+    }
+
+    // ── Page numbers — bottom-right on every page ─────────────
+    const total = doc.internal.getNumberOfPages();
+    for (let pg = 1; pg <= total; pg++) {
+      doc.setPage(pg);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...MUTED);
-      doc.text(String(doc.internal.getNumberOfPages()), PW / 2, PH - 10, { align: 'center' });
+      doc.text(String(pg), PW - M, PH - 10, { align: 'right' });
     }
 
     doc.save('Vedha-Mereddy-Portfolio.pdf');
