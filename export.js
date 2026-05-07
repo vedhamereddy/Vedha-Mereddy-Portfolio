@@ -154,6 +154,19 @@ async function exportProjectsPDF() {
       return y;
     }
 
+    // How many mm remain on the current page
+    function spaceLeft(y) { return PH - M - 12 - y; }
+
+    // Load an image, but shrink its max height to fit remaining page space.
+    // If less than minSpace remains, jump to next page first.
+    async function loadImageFit(url, maxW, preferH, minSpace = 35) {
+      const avail = spaceLeft(y);
+      // Jump page if barely any room left
+      if (avail < minSpace) { doc.addPage(); fillBg(); y = M + 4; }
+      const fittedH = Math.min(preferH, spaceLeft(y) - 8);
+      return loadImage(url, maxW, Math.max(fittedH, 20));
+    }
+
     function fontStyle(bold, italic) {
       if (bold && italic) return 'bolditalic';
       if (bold) return 'bold';
@@ -344,13 +357,12 @@ async function exportProjectsPDF() {
         y += 10;
       }
 
-      // Thumbnail — 50% wide max
+      // Thumbnail — 50% wide, shrinks to fit remaining page space
       if (p.image) {
-        const img = await loadImage(p.image, CW * 0.5, 56);
+        const img = await loadImageFit(p.image, CW * 0.5, 56);
         if (img) {
-          y = guard(y, img.h + 10);
           try { doc.addImage(img.data, img.fmt, M + (CW - img.w) / 2, y, img.w, img.h, '', 'FAST'); } catch {}
-          y += img.h + 12;
+          y += img.h + 10;
         }
       }
 
@@ -374,9 +386,8 @@ async function exportProjectsPDF() {
 
           } else if (block.type === 'image' && block.content) {
             const sizeRatio = parseFloat(block.size || '100') / 100;
-            const img = await loadImage(block.content, CW * sizeRatio, 80);
+            const img = await loadImageFit(block.content, CW * sizeRatio, 80);
             if (!img) continue;
-            y = guard(y, img.h + 8);
             const x = block.align === 'center' ? M + (CW - img.w) / 2
               : block.align === 'right' ? M + CW - img.w : M;
             try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
@@ -386,9 +397,10 @@ async function exportProjectsPDF() {
             const imgs = block.images.filter(im => im.url);
             if (!imgs.length) continue;
             const gap = 4, slotW = (CW - (imgs.length - 1) * gap) / imgs.length;
-            const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotW, 55)));
+            const rowMaxH = Math.min(55, spaceLeft(y) - 8);
+            if (spaceLeft(y) < 35) { doc.addPage(); fillBg(); y = M + 4; }
+            const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotW, Math.max(rowMaxH, 20))));
             const rowH = Math.max(...loaded.filter(Boolean).map(im => im.h), 0);
-            y = guard(y, rowH + 8);
             let xc = M;
             for (const img of loaded) {
               if (!img) { xc += slotW + gap; continue; }
@@ -403,7 +415,7 @@ async function exportProjectsPDF() {
             const textColW = CW * (1 - imgPct) - 6;
             const imgX     = block.imagePosition === 'right' ? M + textColW + 6 : M;
             const textX    = block.imagePosition === 'right' ? M : M + imgMaxW + 6;
-            const img      = block.image ? await loadImage(block.image, imgMaxW, 80) : null;
+            const img      = block.image ? await loadImageFit(block.image, imgMaxW, 80) : null;
             const items    = parseHtmlContent(block.content || '');
 
             // Estimate text height for guard
