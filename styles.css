@@ -519,9 +519,9 @@ body.intro-done .hero-word {
 #about { background: var(--bg); }
 .about-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: var(--space-xl);
-  align-items: start;
+  grid-template-columns: 1fr 260px;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
 }
 .about-text {
   font-size: 1.05rem;
@@ -530,13 +530,28 @@ body.intro-done .hero-word {
   color: var(--ink-mid);
 }
 .about-text p + p { margin-top: var(--space-sm); }
+.about-photo-wrap {
+  position: relative;
+  display: block;
+}
+/* Subtle offset accent frame behind the photo */
+.about-photo-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -10px -10px 10px 10px;
+  border: 1px solid rgba(201, 169, 127, 0.25);
+  border-radius: 6px;
+  pointer-events: none;
+}
 .about-photo {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
-  object-position: center top;
+  object-position: center 8%;
   border-radius: 4px;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Skills ────────────────────────────────────────────────── */
@@ -1374,10 +1389,15 @@ footer .container {
   .about-grid {
     grid-template-columns: 1fr;
   }
+  .about-photo-wrap {
+    max-width: 240px;
+  }
+  .about-photo-wrap::before {
+    inset: -8px -8px 8px 8px;
+  }
   .about-photo {
-    max-width: 280px;
-    aspect-ratio: 1 / 1;
-    object-position: center 20%;
+    aspect-ratio: 4 / 5;
+    object-position: center 8%;
   }
 
   /* Project modal */
