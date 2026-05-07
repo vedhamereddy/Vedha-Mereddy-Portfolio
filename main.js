@@ -2,7 +2,7 @@
 function renderNav() {
   document.querySelector(".nav-logo").innerHTML =
     `<span class="nav-logo-first">${PORTFOLIO.name}</span>&nbsp;<span class="nav-logo-last">${PORTFOLIO.lastName}</span>`;
-  document.querySelector(".nav-links").innerHTML = ["about", "projects", "contact"]
+  document.querySelector(".nav-links").innerHTML = ["about", "projects"]
     .map(id => `<a href="#${id}">${id}</a>`).join("");
 }
 
@@ -116,14 +116,6 @@ function initModal() {
   }
 }
 
-// ── Render contact ───────────────────────────────────────────
-function renderContact() {
-  const el = document.querySelector(".contact-links");
-  el.innerHTML = PORTFOLIO.links.map(l =>
-    `<a href="${l.href}" class="contact-link" target="_blank" rel="noopener">${l.label}</a>`
-  ).join("");
-}
-
 // ── Render footer ────────────────────────────────────────────
 function renderFooter() {
   document.querySelector(".footer-copy").textContent =
@@ -233,7 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderHero();
   renderAbout();
   renderProjects();
-  renderContact();
   renderFooter();
   initScrollEffects();
   initParallax();
