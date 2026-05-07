@@ -487,6 +487,11 @@ function moveBlock(index, direction) {
   flushEditorContent();
   [editingBlocks[index], editingBlocks[newIndex]] = [editingBlocks[newIndex], editingBlocks[index]];
   renderBlockEditor();
+  // Scroll the moved block into view so the user doesn't lose their place
+  const blockItems = document.querySelectorAll('#blocks-container .block-item');
+  if (blockItems[newIndex]) {
+    blockItems[newIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 function closeEditModal() {
