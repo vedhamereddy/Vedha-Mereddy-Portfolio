@@ -236,8 +236,13 @@ function openEditModal(project, index) {
 // ── Block editor ──────────────────────────────────────────────
 function flushEditorContent() {
   Object.entries(joditInstances).forEach(([i, editor]) => {
-    editingBlocks[i].content = editor.value;
-    editor.destruct();
+    const idx = parseInt(i);
+    try {
+      if (editingBlocks[idx] !== undefined) {
+        editingBlocks[idx].content = editor.value;
+      }
+      editor.destruct();
+    } catch {}
   });
   joditInstances = {};
 }
@@ -471,6 +476,7 @@ function removeRowImage(blockIndex, imgIndex) {
 }
 
 function removeBlock(index) {
+  flushEditorContent(); // save & destruct all editors before mutating the array
   editingBlocks.splice(index, 1);
   renderBlockEditor();
 }
@@ -478,6 +484,7 @@ function removeBlock(index) {
 function moveBlock(index, direction) {
   const newIndex = index + direction;
   if (newIndex < 0 || newIndex >= editingBlocks.length) return;
+  flushEditorContent();
   [editingBlocks[index], editingBlocks[newIndex]] = [editingBlocks[newIndex], editingBlocks[index]];
   renderBlockEditor();
 }
