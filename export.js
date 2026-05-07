@@ -113,70 +113,41 @@ async function exportProjectsPDF() {
       return y;
     }
 
-    // ── Cover page ───────────────────────────────────────────
+    // ── Compact header (top of page 1) ───────────────────────
     fillBg();
+    const projects = window._projects || PORTFOLIO.projects;
 
-    // Accent bar
-    doc.setFillColor(...BORDER);
-    doc.rect(M, 72, 1.5, 40, 'F');
-
-    // Name
+    // Name + subtitle on one line
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(40);
+    doc.setFontSize(15);
     doc.setTextColor(...INK);
-    doc.text('VEDHA', M + 7, 90);
-    doc.setTextColor(...ACCENT);
-    doc.text('MEREDDY', M + 7, 107);
+    doc.text('VEDHA MEREDDY', M, M + 2);
 
-    // Role
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
-    doc.text('DESIGN & ENGINEERING PORTFOLIO', M + 7, 118);
-
-    rule(126);
-
-    // Date
-    doc.setFontSize(7.5);
-    doc.setTextColor(...MUTED);
-    const projects = window._projects || PORTFOLIO.projects;
     doc.text(
-      `${projects.length} Projects  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`,
-      M + 7, 133
+      `Design & Engineering Portfolio  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`,
+      M, M + 8
     );
 
-    // Table of contents
-    let tocY = 165;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(...MUTED);
-    doc.text('SELECTED WORK', M, tocY);
-    tocY += 5;
-    rule(tocY);
-    tocY += 7;
+    rule(M + 13);
 
-    projects.forEach((p, i) => {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...MID);
-      doc.text(`${String(i + 1).padStart(2, '0')}`, M, tocY);
-      doc.setTextColor(...INK);
-      doc.text(p.title, M + 10, tocY);
-      tocY += 7;
-    });
-
-    // Footer
-    doc.setFontSize(7);
-    doc.setTextColor(...MUTED);
-    doc.text('vedhamereddy.github.io/Vedha-Mereddy-Portfolio', M, PH - 12);
+    let firstProjectY = M + 22; // projects start right after header
 
     // ── Project pages ────────────────────────────────────────
     for (let idx = 0; idx < projects.length; idx++) {
       const p = projects[idx];
-      doc.addPage();
-      fillBg();
 
-      let y = M;
+      if (idx === 0) {
+        // First project continues on page 1 after the header
+      } else {
+        doc.addPage();
+        fillBg();
+        firstProjectY = M;
+      }
+
+      let y = firstProjectY;
 
       // Index / count
       doc.setFont('helvetica', 'normal');
