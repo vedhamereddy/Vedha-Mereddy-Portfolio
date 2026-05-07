@@ -13,10 +13,9 @@ const PORTFOLIO = {
   videoUrl: "",   // paste a YouTube/Vimeo embed URL here to show a video
   title: "Engineering Portfolio",
   tagline: "Building technology that enhances the\nhuman experience.",
-  about: `I'm an engineer who cares about crafting solutions that are
-    both technically sound and genuinely useful. My work spans
-    hardware design, embedded systems, and software — with a focus
-    on clarity, performance, and maintainability.`,
+  about: `Hi I'm Vedha.
+
+I'm a Mechatronics student at Waterloo focused on Human-Robot Interaction. I'm driven by human-centric design, using my personal projects to explore how machines can better understand and adapt to their users. I'm working toward building technology that feels natural to use and genuinely enhances the human experience.`,
 
   // ── Social / contact links ────────────────────────────────
   links: [

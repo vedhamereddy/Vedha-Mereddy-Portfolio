@@ -28,16 +28,6 @@ function renderHero() {
 function renderAbout() {
   document.querySelector(".about-text").innerHTML =
     PORTFOLIO.about.split("\n").filter(Boolean).map(p => `<p>${p.trim()}</p>`).join("");
-
-  const skillsEl = document.querySelector(".skills-grid");
-  skillsEl.innerHTML = PORTFOLIO.skills.map(g =>
-    `<div class="skill-group fade-in">
-      <div class="skill-category">${g.category}</div>
-      <div class="skill-tags">
-        ${g.items.map(item => `<span class="skill-tag">${item}</span>`).join("")}
-      </div>
-    </div>`
-  ).join("");
 }
 
 // ── Render projects ──────────────────────────────────────────
