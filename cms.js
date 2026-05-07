@@ -331,7 +331,7 @@ function renderBlockEditor() {
   // Initialize Jodit for text and image-text blocks
   const joditConfig = {
     theme: 'dark',
-    buttons: ['bold', 'italic', 'underline', '|', 'ul', 'ol', '|', 'indent', 'outdent', '|', 'table', '|', 'fontsize', '|', 'eraser'],
+    buttons: ['bold', 'italic', 'underline', '|', 'ul', 'ol', '|', 'indent', 'outdent', '|', 'table', '|', 'link', 'unlink', '|', 'fontsize', '|', 'eraser'],
     showXPathInStatusbar: false,
     showCharsCounter: false,
     showWordsCounter: false,
