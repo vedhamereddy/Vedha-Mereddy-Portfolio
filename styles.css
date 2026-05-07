@@ -835,7 +835,7 @@ body.intro-done .hero-word {
 }
 .modal-thumbnail {
   width: 100%;
-  max-height: 340px;
+  height: 280px;
   object-fit: cover;
   border-radius: 6px;
   display: block;
