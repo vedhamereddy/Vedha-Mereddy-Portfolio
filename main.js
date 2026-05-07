@@ -76,13 +76,17 @@ function initLightbox() {
   lb.addEventListener("click", e => { if (e.target === lb) closeLightbox(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && lb.classList.contains("open")) closeLightbox(); });
 
-  // Global delegation — any .img-expand-btn anywhere on the page
+  // Global delegation — expand button OR clicking directly on the image
   document.addEventListener("click", e => {
     const btn = e.target.closest(".img-expand-btn");
-    if (!btn) return;
-    e.stopPropagation();
-    const img = btn.closest(".img-expand-wrap")?.querySelector("img");
-    if (img) openLightbox(img.src);
+    if (btn) {
+      e.stopPropagation();
+      const img = btn.closest(".img-expand-wrap")?.querySelector("img");
+      if (img) openLightbox(img.src);
+      return;
+    }
+    const wrap = e.target.closest(".img-expand-wrap");
+    if (wrap && e.target.tagName === "IMG") openLightbox(e.target.src);
   });
 }
 
