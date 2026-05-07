@@ -282,7 +282,6 @@ async function exportProjectsPDF() {
           doc.setTextColor(...(item.type === 'table-header' ? INK : MID));
           item.cells.forEach((cell, ci) => doc.text(String(cell).substring(0, 45), colX + ci * colWCell, y));
           y += 5;
-          if (item.type === 'table-header') rule(y - 1, colX, colX + colW);
         }
       }
       return y;
@@ -308,7 +307,6 @@ async function exportProjectsPDF() {
       CX, M + 10.5, { align: 'center' }
     );
     doc.setCharSpace(0);
-    rule(M + 15);
     let y = M + 18;
 
     // ── Projects ──────────────────────────────────────────────
@@ -317,14 +315,7 @@ async function exportProjectsPDF() {
 
       if (idx > 0) { doc.addPage(); fillBg(); y = M; }
 
-      // Counter
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(...MUTED);
-      doc.text(`${String(idx + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}`, M, y);
-      y += 4.5;
-      rule(y);
-      y += 12;
+      y += 4;
 
       // Title
       doc.setFont('helvetica', 'bold');
@@ -345,8 +336,7 @@ async function exportProjectsPDF() {
         y += 9;
       }
 
-      rule(y);
-      y += 11;
+      y += 4;
 
       // Summary (italic)
       if (p.summary) {
@@ -366,8 +356,7 @@ async function exportProjectsPDF() {
 
       // Content blocks
       if (p.blocks && p.blocks.length) {
-        rule(y);
-        y += 12;
+        y += 4;
 
         for (const block of p.blocks) {
 
@@ -377,12 +366,7 @@ async function exportProjectsPDF() {
             doc.setFontSize(12.5);
             doc.setTextColor(...INK);
             doc.text(block.content.trim(), M, y);
-            y += 4;
-            doc.setDrawColor(...ACCENT);
-            doc.setLineWidth(0.5);
-            doc.line(M, y, M + 24, y);
-            doc.setLineWidth(0.2);
-            y += 8;
+            y += 9;
 
           } else if (block.type === 'text' && block.content) {
             const items = parseHtmlContent(block.content);
