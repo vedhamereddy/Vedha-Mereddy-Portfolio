@@ -255,6 +255,11 @@ function renderBlockEditor() {
 
   container.innerHTML = editingBlocks.map((block, i) => `
     <div class="block-item">
+      <div class="block-actions">
+        <button class="block-btn" onclick="moveBlock(${i}, -1)">↑</button>
+        <button class="block-btn" onclick="moveBlock(${i}, 1)">↓</button>
+        <button class="block-btn danger" onclick="removeBlock(${i})">✕</button>
+      </div>
       <select class="block-type" data-index="${i}">
         <option value="text"       ${block.type === 'text'       ? 'selected' : ''}>Text</option>
         <option value="heading"    ${block.type === 'heading'    ? 'selected' : ''}>Heading</option>
@@ -325,11 +330,6 @@ function renderBlockEditor() {
                  </div>`
               : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
       }
-      <div class="block-actions">
-        <button class="block-btn" onclick="moveBlock(${i}, -1)">↑</button>
-        <button class="block-btn" onclick="moveBlock(${i}, 1)">↓</button>
-        <button class="block-btn danger" onclick="removeBlock(${i})">✕</button>
-      </div>
     </div>
   `).join('');
 
