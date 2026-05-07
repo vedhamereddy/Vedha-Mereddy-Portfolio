@@ -327,15 +327,15 @@ async function exportProjectsPDF() {
 
       if (idx > 0) { doc.addPage(); fillBg(); y = M; }
 
-      y += 4;
+      y += 3;
 
       // Title
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
+      doc.setFontSize(14);
       doc.setTextColor(...ACCENT);
       const titleLines = doc.splitTextToSize(p.title, CW);
       doc.text(titleLines, M, y);
-      y += titleLines.length * 8.8 + 5;
+      y += titleLines.length * 6.5 + 3;
 
       // Tags
       if (p.tags && p.tags.length) {
@@ -345,15 +345,15 @@ async function exportProjectsPDF() {
         doc.setCharSpace(0.8);
         doc.text(p.tags.join('   ·   ').toUpperCase(), M, y);
         doc.setCharSpace(0);
-        y += 9;
+        y += 6;
       }
 
-      y += 4;
+      y += 3;
 
       // Summary (italic)
       if (p.summary) {
-        y = writeWrapped(p.summary, M, y, 10.5, MID, 'italic');
-        y += 10;
+        y = writeWrapped(p.summary, M, y, 10, MID, 'italic');
+        y += 6;
       }
 
       // Thumbnail — 50% wide, shrinks to fit remaining page space
