@@ -63,10 +63,11 @@
   100% { width: 100%; }
 }
 .intro-sub {
-  font-size: 1.1rem;
+  font-size: clamp(0.6rem, 2.5vw, 1.1rem);
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  text-align: center;
   color: #8A8078;
   opacity: 0;
   animation: subFade 0.5s ease forwards;
