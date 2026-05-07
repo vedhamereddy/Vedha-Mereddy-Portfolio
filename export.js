@@ -242,6 +242,50 @@ async function exportProjectsPDF() {
               xCursor += slotMaxW + 4;
             }
             y += rowH + 8;
+
+          } else if (block.type === 'image-text') {
+            const imgWidthPct = parseFloat(block.imageWidth || '40') / 100;
+            const textW = CW * (1 - imgWidthPct) - 6;
+            const imgMaxW = CW * imgWidthPct;
+            const text = htmlToText(block.content || '');
+            const paragraphs = text.split('\n').filter(l => l.trim());
+
+            let img = null;
+            if (block.image) img = await loadImage(block.image, imgMaxW, 80);
+
+            const imgH = img ? img.h : 0;
+            // Estimate text height
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            let estTextH = 0;
+            for (const para of paragraphs) {
+              const lines = doc.splitTextToSize(para, textW);
+              estTextH += lines.length * 9 * 0.42 + 2;
+            }
+            const blockH = Math.max(imgH, estTextH) + 8;
+            y = guard(y, blockH);
+
+            const imgX = block.imagePosition === 'right' ? M + textW + 6 : M;
+            const textX = block.imagePosition === 'right' ? M : M + imgMaxW + 6;
+
+            if (img) {
+              try { doc.addImage(img.data, img.fmt, imgX, y, img.w, img.h, '', 'FAST'); } catch {}
+            }
+
+            let ty = y;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(...MID);
+            for (const para of paragraphs) {
+              const lines = doc.splitTextToSize(para, textW);
+              lines.forEach(line => {
+                doc.text(line, textX, ty);
+                ty += 9 * 0.42;
+              });
+              ty += 2;
+            }
+
+            y += blockH;
           }
         }
       }

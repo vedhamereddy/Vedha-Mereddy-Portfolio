@@ -77,6 +77,14 @@ function initModal() {
             `<img src="${img.url}" alt="" class="modal-image-row-item" />`
           ).join('')}</div>`;
         }
+        if (block.type === 'image-text') {
+          const dir = block.imagePosition === 'right' ? 'row-reverse' : 'row';
+          const imgW = block.imageWidth || '40%';
+          return `<div class="modal-image-text" style="flex-direction:${dir}">
+            ${block.image ? `<img src="${block.image}" class="modal-image-text-img" style="width:${imgW}" />` : ''}
+            <div class="modal-block-text modal-image-text-body">${block.content || ''}</div>
+          </div>`;
+        }
         return `<div class="modal-block-text">${block.content}</div>`;
       }).join('');
       detailsEl.style.display = "block";

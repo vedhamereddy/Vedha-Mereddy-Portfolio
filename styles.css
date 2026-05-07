@@ -1250,6 +1250,28 @@ footer .container {
 .modal-block-text table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-size: 0.85rem; }
 .modal-block-text td, .modal-block-text th { border: 1px solid var(--border); padding: 0.4rem 0.7rem; text-align: left; }
 .modal-block-text th { background: rgba(255,255,255,0.05); font-weight: 500; color: var(--ink); }
+/* Image + Text side-by-side in modal */
+.modal-image-text {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin: 0.75rem 0;
+}
+.modal-image-text-img {
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+  max-width: 100%;
+}
+.modal-image-text-body {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .modal-image-text { flex-direction: column !important; }
+  .modal-image-text-img { width: 100% !important; }
+}
+
 .modal-block-image {
   max-width: 100%;
   height: auto;

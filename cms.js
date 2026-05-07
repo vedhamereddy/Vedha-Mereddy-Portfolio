@@ -251,10 +251,11 @@ function renderBlockEditor() {
   container.innerHTML = editingBlocks.map((block, i) => `
     <div class="block-item">
       <select class="block-type" data-index="${i}">
-        <option value="text"      ${block.type === 'text'      ? 'selected' : ''}>Text</option>
-        <option value="heading"   ${block.type === 'heading'   ? 'selected' : ''}>Heading</option>
-        <option value="image"     ${block.type === 'image'     ? 'selected' : ''}>Image</option>
-        <option value="image-row" ${block.type === 'image-row' ? 'selected' : ''}>Image Row</option>
+        <option value="text"       ${block.type === 'text'       ? 'selected' : ''}>Text</option>
+        <option value="heading"    ${block.type === 'heading'    ? 'selected' : ''}>Heading</option>
+        <option value="image"      ${block.type === 'image'      ? 'selected' : ''}>Image</option>
+        <option value="image-row"  ${block.type === 'image-row'  ? 'selected' : ''}>Image Row</option>
+        <option value="image-text" ${block.type === 'image-text' ? 'selected' : ''}>Image + Text</option>
       </select>
       ${block.type === 'text'
         ? `<textarea class="block-jodit" id="editor-${i}"></textarea>`
@@ -295,7 +296,29 @@ function renderBlockEditor() {
                  </div>
                  <button class="admin-btn" onclick="addRowImage(${i})" style="margin-top:0.5rem;">+ Add Image to Row</button>
                </div>`
-            : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
+            : block.type === 'image-text'
+              ? `<div class="block-image-text-editor">
+                   <div class="block-image-controls" style="margin-bottom:0.5rem;">
+                     <select class="block-it-position" data-index="${i}">
+                       <option value="left"  ${(block.imagePosition||'left')==='left' ?'selected':''}>Image Left</option>
+                       <option value="right" ${block.imagePosition==='right'?'selected':''}>Image Right</option>
+                     </select>
+                     <select class="block-it-width" data-index="${i}">
+                       <option value="30%" ${(block.imageWidth||'40%')==='30%'?'selected':''}>Narrow (30%)</option>
+                       <option value="40%" ${(block.imageWidth||'40%')==='40%'?'selected':''}>Medium (40%)</option>
+                       <option value="50%" ${block.imageWidth==='50%'?'selected':''}>Half (50%)</option>
+                     </select>
+                   </div>
+                   <div class="block-image-upload" style="margin-bottom:0.75rem;">
+                     ${block.image ? `<img src="${block.image}" class="block-image-preview" />` : ''}
+                     <label class="admin-btn block-upload-btn">
+                       <span>${block.image ? 'Change Image' : 'Upload Image'}</span>
+                       <input type="file" accept="image/*" class="block-it-image-input" data-index="${i}" />
+                     </label>
+                   </div>
+                   <textarea class="block-jodit" id="editor-${i}"></textarea>
+                 </div>`
+              : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
       }
       <div class="block-actions">
         <button class="block-btn" onclick="moveBlock(${i}, -1)">↑</button>
@@ -305,17 +328,21 @@ function renderBlockEditor() {
     </div>
   `).join('');
 
-  // Initialize Jodit for text blocks
+  // Initialize Jodit for text and image-text blocks
+  const joditConfig = {
+    theme: 'dark',
+    buttons: ['bold', 'italic', 'underline', '|', 'ul', 'ol', '|', 'indent', 'outdent', '|', 'table', '|', 'fontsize', '|', 'eraser'],
+    showXPathInStatusbar: false,
+    showCharsCounter: false,
+    showWordsCounter: false,
+    toolbarAdaptive: false,
+  };
+
   editingBlocks.forEach((block, i) => {
-    if (block.type !== 'text') return;
+    if (block.type !== 'text' && block.type !== 'image-text') return;
     const editor = Jodit.make(`#editor-${i}`, {
-      theme: 'dark',
-      buttons: ['bold', 'italic', 'underline', '|', 'ul', 'ol', '|', 'indent', 'outdent', '|', 'table', '|', 'fontsize', '|', 'eraser'],
-      height: 260,
-      showXPathInStatusbar: false,
-      showCharsCounter: false,
-      showWordsCounter: false,
-      toolbarAdaptive: false,
+      ...joditConfig,
+      height: block.type === 'image-text' ? 180 : 260,
     });
     editor.value = block.content || '';
     editor.events.on('change', () => {
@@ -340,6 +367,35 @@ function renderBlockEditor() {
         alert('Image upload failed: ' + err.message);
         span.textContent = 'Upload Image';
       }
+    });
+  });
+
+  // Image+Text block listeners
+  container.querySelectorAll('.block-it-image-input').forEach(input => {
+    input.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const i = parseInt(e.target.dataset.index);
+      const span = e.target.previousElementSibling;
+      span.textContent = 'Uploading…';
+      try {
+        const url = await uploadProjectImage(file);
+        editingBlocks[i].image = url;
+        renderBlockEditor();
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+        span.textContent = 'Upload Image';
+      }
+    });
+  });
+  container.querySelectorAll('.block-it-position').forEach(select => {
+    select.addEventListener('change', e => {
+      editingBlocks[parseInt(e.target.dataset.index)].imagePosition = e.target.value;
+    });
+  });
+  container.querySelectorAll('.block-it-width').forEach(select => {
+    select.addEventListener('change', e => {
+      editingBlocks[parseInt(e.target.dataset.index)].imageWidth = e.target.value;
     });
   });
 
@@ -381,7 +437,8 @@ function renderBlockEditor() {
       const i = parseInt(e.target.dataset.index);
       const newType = e.target.value;
       editingBlocks[i].type = newType;
-      if (newType === 'image-row' && !editingBlocks[i].images) editingBlocks[i].images = [];
+      if (newType === 'image-row'  && !editingBlocks[i].images) editingBlocks[i].images = [];
+      if (newType === 'image-text' && !editingBlocks[i].image) { editingBlocks[i].image = ''; editingBlocks[i].imageWidth = '40%'; editingBlocks[i].imagePosition = 'left'; }
       renderBlockEditor();
     });
   });
@@ -396,7 +453,8 @@ function renderBlockEditor() {
 
 function addBlock(type = 'text') {
   const block = { type, content: '' };
-  if (type === 'image-row') block.images = [];
+  if (type === 'image-row')  { block.images = []; }
+  if (type === 'image-text') { block.image = ''; block.imageWidth = '40%'; block.imagePosition = 'left'; }
   editingBlocks.push(block);
   renderBlockEditor();
 }
