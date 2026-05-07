@@ -50,6 +50,42 @@ function renderProjects(projectsData) {
 
 }
 
+// ── Lightbox ─────────────────────────────────────────────────
+function initLightbox() {
+  const lb       = document.getElementById("lightbox");
+  const lbImg    = document.getElementById("lightbox-img");
+  const lbClose  = document.getElementById("lightbox-close");
+
+  function openLightbox(src) {
+    lbImg.src = src;
+    lb.classList.add("open");
+    lb.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox() {
+    lb.classList.remove("open");
+    lb.setAttribute("aria-hidden", "true");
+    lbImg.src = "";
+    // restore body scroll only if project modal is also closed
+    if (!document.getElementById("project-modal").classList.contains("open")) {
+      document.body.style.overflow = "";
+    }
+  }
+
+  lbClose.addEventListener("click", closeLightbox);
+  lb.addEventListener("click", e => { if (e.target === lb) closeLightbox(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && lb.classList.contains("open")) closeLightbox(); });
+
+  // Global delegation — any .img-expand-btn anywhere on the page
+  document.addEventListener("click", e => {
+    const btn = e.target.closest(".img-expand-btn");
+    if (!btn) return;
+    e.stopPropagation();
+    const img = btn.closest(".img-expand-wrap")?.querySelector("img");
+    if (img) openLightbox(img.src);
+  });
+}
+
 // ── Project modal ────────────────────────────────────────────
 function initModal() {
   const modal    = document.getElementById("project-modal");
@@ -65,23 +101,32 @@ function initModal() {
     if (p.blocks && p.blocks.length > 0) {
       detailsEl.innerHTML = p.blocks.map(block => {
         if (block.type === 'heading') return `<h3 class="modal-block-heading">${block.content}</h3>`;
+        const expandBtn = `<button class="img-expand-btn" aria-label="Expand image"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button>`;
         if (block.type === 'image') {
           const align = block.align || 'left';
-          const alignStyle = align === 'center' ? 'margin:0 auto;display:block;'
-            : align === 'right' ? 'margin-left:auto;display:block;' : 'display:block;';
-          return `<img src="${block.content}" alt="" class="modal-block-image" style="width:${block.size||'100%'};${alignStyle}" />`;
+          const wrapStyle = align === 'center' ? 'margin:0 auto;' : align === 'right' ? 'margin-left:auto;' : '';
+          return `<span class="img-expand-wrap" style="width:${block.size||'100%'};${wrapStyle}">
+            <img src="${block.content}" alt="" class="modal-block-image" style="width:100%" />
+            ${expandBtn}
+          </span>`;
         }
         if (block.type === 'image-row') {
           const imgs = (block.images || []).filter(img => img.url);
           return `<div class="modal-image-row">${imgs.map(img =>
-            `<img src="${img.url}" alt="" class="modal-image-row-item" />`
+            `<span class="img-expand-wrap" style="flex:1;min-width:0">
+              <img src="${img.url}" alt="" class="modal-image-row-item" style="width:100%" />
+              ${expandBtn}
+            </span>`
           ).join('')}</div>`;
         }
         if (block.type === 'image-text') {
           const dir = block.imagePosition === 'right' ? 'row-reverse' : 'row';
           const imgW = block.imageWidth || '40%';
           return `<div class="modal-image-text" style="flex-direction:${dir}">
-            ${block.image ? `<img src="${block.image}" class="modal-image-text-img" style="width:${imgW}" />` : ''}
+            ${block.image ? `<span class="img-expand-wrap" style="width:${imgW};flex-shrink:0">
+              <img src="${block.image}" class="modal-image-text-img" style="width:100%" />
+              ${expandBtn}
+            </span>` : ''}
             <div class="modal-block-text modal-image-text-body">${block.content || ''}</div>
           </div>`;
         }
@@ -238,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initParallax();
   initCursor();
   initModal();
+  initLightbox();
   if (window.initCMS) window.initCMS();
   runIntro();
 });
