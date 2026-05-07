@@ -517,9 +517,9 @@ body.intro-done .hero-word {
 
 /* ── About ─────────────────────────────────────────────────── */
 #about { background: var(--bg); }
-#about .about-grid {
+.about-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 340px;
   gap: var(--space-xl);
   align-items: start;
 }
@@ -530,6 +530,14 @@ body.intro-done .hero-word {
   color: var(--ink-mid);
 }
 .about-text p + p { margin-top: var(--space-sm); }
+.about-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 4px;
+  display: block;
+}
 
 /* ── Skills ────────────────────────────────────────────────── */
 .skills-grid {
@@ -1363,6 +1371,14 @@ footer .container {
 
   /* About */
   .about-text { font-size: 0.95rem; }
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+  .about-photo {
+    max-width: 280px;
+    aspect-ratio: 1 / 1;
+    object-position: center 20%;
+  }
 
   /* Project modal */
   .modal-panel {
