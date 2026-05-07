@@ -1,33 +1,49 @@
 // ── PDF Export ───────────────────────────────────────────────
 
-// Parse Jodit HTML into structured objects for clean PDF rendering
+// Parse Jodit HTML into structured objects, preserving inline bold/italic as spans
 function parseHtmlContent(html) {
   if (!html) return [];
   const div = document.createElement('div');
   div.innerHTML = html;
   const result = [];
 
+  // Recursively extract inline text as styled span objects
+  function extractSpans(node, bold = false, italic = false) {
+    const spans = [];
+    if (node.nodeType === 3) {
+      const text = node.textContent || '';
+      if (text) spans.push({ text, bold, italic });
+      return spans;
+    }
+    const tag = (node.tagName || '').toLowerCase();
+    const b = bold || tag === 'strong' || tag === 'b';
+    const it = italic || tag === 'em' || tag === 'i';
+    for (const child of node.childNodes) spans.push(...extractSpans(child, b, it));
+    return spans;
+  }
+
   function processNode(node) {
     if (node.nodeType === 3) {
       const t = (node.textContent || '').trim();
-      if (t) result.push({ type: 'paragraph', text: t });
+      if (t) result.push({ type: 'paragraph', spans: [{ text: t, bold: false, italic: false }] });
       return;
     }
     const tag = (node.tagName || '').toLowerCase();
+
     if (tag === 'p' || tag === 'div') {
-      const t = (node.textContent || '').trim();
-      if (t) result.push({ type: 'paragraph', text: t });
+      const spans = extractSpans(node);
+      if (spans.some(s => s.text.trim())) result.push({ type: 'paragraph', spans });
     } else if (tag === 'ul') {
       for (const li of node.querySelectorAll(':scope > li')) {
-        const t = (li.textContent || '').trim();
-        if (t) result.push({ type: 'bullet', text: t });
+        const spans = extractSpans(li);
+        if (spans.some(s => s.text.trim())) result.push({ type: 'bullet', spans });
       }
     } else if (tag === 'ol') {
       let n = 0;
       for (const li of node.querySelectorAll(':scope > li')) {
         n++;
-        const t = (li.textContent || '').trim();
-        if (t) result.push({ type: 'numbered', text: t, num: n });
+        const spans = extractSpans(li);
+        if (spans.some(s => s.text.trim())) result.push({ type: 'numbered', spans, num: n });
       }
     } else if (/^h[1-6]$/.test(tag)) {
       const t = (node.textContent || '').trim();
@@ -46,12 +62,16 @@ function parseHtmlContent(html) {
   }
 
   for (const child of div.childNodes) processNode(child);
-  return result.filter(item => (item.text && item.text.trim()) || (item.cells && item.cells.length));
+  return result.filter(item =>
+    (item.spans && item.spans.some(s => s.text.trim())) ||
+    (item.text  && item.text.trim()) ||
+    (item.cells && item.cells.length)
+  );
 }
 
 async function fetchImageAsBase64(url) {
   try {
-    const res = await fetch(url);
+    const res  = await fetch(url);
     const blob = await res.blob();
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -103,7 +123,7 @@ async function exportProjectsPDF() {
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
     const PW = 210, PH = 297, M = 22, CW = PW - M * 2;
-    const LH = 5.0;   // base line height (mm)
+    const LH = 5.0; // base line height mm
 
     const BG     = [252, 250, 247];
     const INK    = [22,  18,  14];
@@ -134,7 +154,75 @@ async function exportProjectsPDF() {
       return y;
     }
 
-    // Wrapped text block — returns new y
+    function fontStyle(bold, italic) {
+      if (bold && italic) return 'bolditalic';
+      if (bold) return 'bold';
+      if (italic) return 'italic';
+      return 'normal';
+    }
+
+    // Render spans with inline bold/italic, word-wrapping manually.
+    // Returns new y.
+    function renderSpans(spans, x, y, size, color, maxW) {
+      if (!spans || !spans.length) return y;
+      const lh = size * 0.46;
+
+      // Tokenize into words, preserving style per token
+      const tokens = [];
+      for (const span of spans) {
+        const words = span.text.split(' ');
+        words.forEach((word, wi) => {
+          if (word) tokens.push({ text: word, bold: span.bold, italic: span.italic });
+          if (wi < words.length - 1) tokens.push({ text: ' ', bold: false, italic: false, space: true });
+        });
+      }
+
+      // Measure a token (requires font to be set)
+      function measure(token) {
+        doc.setFont('helvetica', fontStyle(token.bold, token.italic));
+        doc.setFontSize(size);
+        return doc.getTextWidth(token.text);
+      }
+
+      // Pre-measure all tokens
+      tokens.forEach(t => { t.w = measure(t); });
+
+      // Build wrapped lines
+      const lines = [];
+      let current = [], currentW = 0;
+
+      for (const token of tokens) {
+        if (token.space) {
+          if (current.length) { current.push(token); currentW += token.w; }
+        } else if (currentW + token.w > maxW + 0.5 && current.some(t => !t.space)) {
+          // Trim trailing spaces then flush
+          while (current.length && current[current.length - 1].space) current.pop();
+          lines.push([...current]);
+          current = [token]; currentW = token.w;
+        } else {
+          current.push(token); currentW += token.w;
+        }
+      }
+      while (current.length && current[current.length - 1].space) current.pop();
+      if (current.length) lines.push(current);
+
+      // Render each line
+      for (const line of lines) {
+        y = guard(y, lh + 1);
+        let lx = x;
+        doc.setTextColor(...color);
+        for (const token of line) {
+          doc.setFont('helvetica', fontStyle(token.bold, token.italic));
+          doc.setFontSize(size);
+          doc.text(token.text, lx, y);
+          lx += token.w;
+        }
+        y += lh;
+      }
+      return y;
+    }
+
+    // Plain wrapped text (for summary, headings, tags — no inline styling needed)
     function writeWrapped(text, x, y, size, color, style = 'normal', maxW = CW) {
       doc.setFont('helvetica', style);
       doc.setFontSize(size);
@@ -148,50 +236,33 @@ async function exportProjectsPDF() {
       return y;
     }
 
-    // Render parsed HTML content lines — returns new y
+    // Render a parsed block list — returns new y
     function renderContent(items, startY, colX = M, colW = CW) {
       let y = startY;
       for (const item of items) {
 
         if (item.type === 'paragraph') {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          doc.setTextColor(...MID);
-          for (const line of doc.splitTextToSize(item.text, colW)) {
-            y = guard(y, LH + 1);
-            doc.text(line, colX, y);
-            y += LH;
-          }
-          y += 2.5; // paragraph gap
+          y = renderSpans(item.spans, colX, y, 10, MID, colW);
+          y += 2.5;
 
         } else if (item.type === 'bullet') {
+          y = guard(y, LH + 1);
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(10);
           doc.setTextColor(...MID);
-          const wrapped = doc.splitTextToSize(item.text, colW - 8);
-          y = guard(y, LH + 1);
-          doc.text('—', colX + 1, y);
-          for (let i = 0; i < wrapped.length; i++) {
-            if (i > 0) y = guard(y, LH + 1);
-            doc.text(wrapped[i], colX + 7, y);
-            y += LH;
-          }
+          doc.text('•', colX + 1, y);
+          const startY2 = y;
+          y = renderSpans(item.spans, colX + 6, startY2, 10, MID, colW - 7);
           y += 1.2;
 
         } else if (item.type === 'numbered') {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          doc.setTextColor(...MID);
-          const wrapped = doc.splitTextToSize(item.text, colW - 8);
           y = guard(y, LH + 1);
           doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(...MID);
           doc.text(`${item.num}.`, colX + 1, y);
-          doc.setFont('helvetica', 'normal');
-          for (let i = 0; i < wrapped.length; i++) {
-            if (i > 0) y = guard(y, LH + 1);
-            doc.text(wrapped[i], colX + 7, y);
-            y += LH;
-          }
+          const startY2 = y;
+          y = renderSpans(item.spans, colX + 7, startY2, 10, MID, colW - 8);
           y += 1.2;
 
         } else if (item.type === 'subheading') {
@@ -206,17 +277,10 @@ async function exportProjectsPDF() {
         } else if (item.type === 'table-header' || item.type === 'table-row') {
           const colWCell = colW / Math.max(item.cells.length, 1);
           y = guard(y, 6);
-          if (item.type === 'table-header') {
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(...INK);
-          } else {
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(...MID);
-          }
+          doc.setFont('helvetica', item.type === 'table-header' ? 'bold' : 'normal');
           doc.setFontSize(9);
-          item.cells.forEach((cell, ci) => {
-            doc.text(String(cell).substring(0, 45), colX + ci * colWCell, y);
-          });
+          doc.setTextColor(...(item.type === 'table-header' ? INK : MID));
+          item.cells.forEach((cell, ci) => doc.text(String(cell).substring(0, 45), colX + ci * colWCell, y));
           y += 5;
           if (item.type === 'table-header') rule(y - 1, colX, colX + colW);
         }
@@ -247,13 +311,7 @@ async function exportProjectsPDF() {
     for (let idx = 0; idx < projects.length; idx++) {
       const p = projects[idx];
 
-      if (idx > 0) {
-        doc.addPage();
-        fillBg();
-        y = M;
-      }
-
-      // ── Project header ──────────────────────────────────────
+      if (idx > 0) { doc.addPage(); fillBg(); y = M; }
 
       // Counter
       doc.setFont('helvetica', 'normal');
@@ -292,25 +350,23 @@ async function exportProjectsPDF() {
         y += 10;
       }
 
-      // Thumbnail — max 50% wide so it doesn't dominate
+      // Thumbnail — 50% wide max
       if (p.image) {
         const img = await loadImage(p.image, CW * 0.5, 56);
         if (img) {
           y = guard(y, img.h + 10);
-          const x = M + (CW - img.w) / 2;
-          try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
+          try { doc.addImage(img.data, img.fmt, M + (CW - img.w) / 2, y, img.w, img.h, '', 'FAST'); } catch {}
           y += img.h + 12;
         }
       }
 
-      // ── Content blocks ──────────────────────────────────────
+      // Content blocks
       if (p.blocks && p.blocks.length) {
         rule(y);
         y += 12;
 
         for (const block of p.blocks) {
 
-          // Section heading
           if (block.type === 'heading' && block.content?.trim()) {
             y = guard(y, 16);
             doc.setFont('helvetica', 'bold');
@@ -318,22 +374,16 @@ async function exportProjectsPDF() {
             doc.setTextColor(...INK);
             doc.text(block.content.trim(), M, y);
             y += 4;
-            // Short accent underline
             doc.setDrawColor(...ACCENT);
             doc.setLineWidth(0.5);
             doc.line(M, y, M + 24, y);
             doc.setLineWidth(0.2);
             y += 8;
 
-          // Rich text
           } else if (block.type === 'text' && block.content) {
             const items = parseHtmlContent(block.content);
-            if (items.length) {
-              y = renderContent(items, y);
-              y += 3;
-            }
+            if (items.length) { y = renderContent(items, y); y += 3; }
 
-          // Single image
           } else if (block.type === 'image' && block.content) {
             const sizeRatio = parseFloat(block.size || '100') / 100;
             const img = await loadImage(block.content, CW * sizeRatio, 80);
@@ -344,12 +394,10 @@ async function exportProjectsPDF() {
             try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
             y += img.h + 8;
 
-          // Image row
           } else if (block.type === 'image-row' && block.images?.length) {
             const imgs = block.images.filter(im => im.url);
             if (!imgs.length) continue;
-            const gap = 4;
-            const slotW = (CW - (imgs.length - 1) * gap) / imgs.length;
+            const gap = 4, slotW = (CW - (imgs.length - 1) * gap) / imgs.length;
             const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotW, 55)));
             const rowH = Math.max(...loaded.filter(Boolean).map(im => im.h), 0);
             y = guard(y, rowH + 8);
@@ -361,53 +409,41 @@ async function exportProjectsPDF() {
             }
             y += rowH + 8;
 
-          // Image + text side by side
           } else if (block.type === 'image-text') {
             const imgPct   = parseFloat(block.imageWidth || '40') / 100;
             const imgMaxW  = CW * imgPct;
             const textColW = CW * (1 - imgPct) - 6;
             const imgX     = block.imagePosition === 'right' ? M + textColW + 6 : M;
             const textX    = block.imagePosition === 'right' ? M : M + imgMaxW + 6;
+            const img      = block.image ? await loadImage(block.image, imgMaxW, 80) : null;
+            const items    = parseHtmlContent(block.content || '');
 
-            const img   = block.image ? await loadImage(block.image, imgMaxW, 80) : null;
-            const items = parseHtmlContent(block.content || '');
-
-            // Estimate text column height
+            // Estimate text height for guard
             doc.setFontSize(10);
-            let estTextH = 0;
+            let estH = 0;
             for (const item of items) {
-              if (!item.text) continue;
-              const indent = item.type === 'paragraph' ? 0 : 8;
-              const lines  = doc.splitTextToSize(item.text, textColW - indent);
-              estTextH += lines.length * LH + (item.type === 'paragraph' ? 2.5 : 1.2);
+              if (!item.spans) continue;
+              const plain = item.spans.map(s => s.text).join('');
+              const indent = item.type === 'paragraph' ? 0 : 7;
+              estH += doc.splitTextToSize(plain, textColW - indent).length * LH
+                + (item.type === 'paragraph' ? 2.5 : 1.2);
             }
-
-            const blockH = Math.max(img ? img.h : 0, estTextH) + 8;
+            const blockH = Math.max(img ? img.h : 0, estH) + 8;
             y = guard(y, blockH);
+            if (img) { try { doc.addImage(img.data, img.fmt, imgX, y, img.w, img.h, '', 'FAST'); } catch {} }
 
-            if (img) {
-              try { doc.addImage(img.data, img.fmt, imgX, y, img.w, img.h, '', 'FAST'); } catch {}
-            }
-
-            // Render text column inline (no guard — already guarded above)
             let ty = y;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-            doc.setTextColor(...MID);
             for (const item of items) {
-              if (!item.text) continue;
+              if (!item.spans) continue;
               if (item.type === 'bullet') {
-                doc.text('—', textX, ty);
-                for (const l of doc.splitTextToSize(item.text, textColW - 7)) {
-                  doc.text(l, textX + 6, ty);
-                  ty += LH;
-                }
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(...MID);
+                doc.text('•', textX + 1, ty);
+                ty = renderSpans(item.spans, textX + 6, ty, 10, MID, textColW - 7);
                 ty += 1.2;
               } else {
-                for (const l of doc.splitTextToSize(item.text, textColW)) {
-                  doc.text(l, textX, ty);
-                  ty += LH;
-                }
+                ty = renderSpans(item.spans, textX, ty, 10, MID, textColW);
                 ty += 2.5;
               }
             }
