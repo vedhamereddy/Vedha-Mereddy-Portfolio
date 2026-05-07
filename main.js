@@ -42,7 +42,7 @@ function renderProjects(projectsData) {
           <path d="M6 11 L2 15 M2 15 L6 15 M2 15 L2 11"/>
         </svg>
       </button>
-      ${p.image ? `<img src="${p.image}" alt="${p.title}" class="project-image"/>` : `<div class="project-image placeholder"></div>`}
+      ${p.image ? `<img src="${p.image}" alt="${p.title}" class="project-image" style="object-position:${p.thumbnailPosition || 'center center'}"/>` : `<div class="project-image placeholder"></div>`}
       <h3 class="project-title">${p.title}</h3>
       <p class="project-summary">${p.summary}</p>
     </article>`

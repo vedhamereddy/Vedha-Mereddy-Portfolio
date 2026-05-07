@@ -64,6 +64,7 @@ async function loadProjects() {
     summary: p.summary,
     tags: p.tags || [],
     image: p.image_url,
+    thumbnailPosition: p.thumbnail_position || 'center center',
     link: p.link,
     blocks: p.blocks || [],
     order_index: p.order_index,
@@ -209,6 +210,7 @@ function openEditModal(project, index) {
     link: '',
     order_index: index ?? (cmsProjects ? cmsProjects.length : 0),
     blocks: [],
+    thumbnailPosition: 'center center',
   };
 
   editingBlocks = JSON.parse(JSON.stringify(editingProject.blocks || [])).map(b =>
@@ -228,6 +230,24 @@ function openEditModal(project, index) {
 
   const title = modal.querySelector('.admin-modal-title');
   title.textContent = editingProject.id ? 'Edit Project' : 'Add Project';
+
+  // Thumbnail preview + focal point picker
+  const previewWrap = modal.querySelector('#edit-image-preview-wrap');
+  const previewImg  = modal.querySelector('#edit-image-preview');
+  const currentPos  = editingProject.thumbnailPosition || 'center center';
+  if (previewWrap && previewImg) {
+    if (editingProject.image) {
+      previewImg.src = editingProject.image;
+      previewImg.style.objectPosition = currentPos;
+      previewWrap.style.display = 'block';
+    } else {
+      previewImg.src = '';
+      previewWrap.style.display = 'none';
+    }
+  }
+  modal.querySelectorAll('.fp-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pos === currentPos);
+  });
 
   renderBlockEditor();
   modal.classList.add('open');
@@ -545,6 +565,7 @@ async function saveProject() {
       link: modal.querySelector('#edit-link').value.trim(),
       blocks: editingBlocks,
       image_url: imageUrl,
+      thumbnail_position: editingProject.thumbnailPosition || 'center center',
       order_index: editingProject.order_index || 0,
     };
 
@@ -633,11 +654,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (!file) return;
       pendingImageFile = file;
-      const preview = document.getElementById('edit-image-preview');
+      const preview     = document.getElementById('edit-image-preview');
+      const previewWrap = document.getElementById('edit-image-preview-wrap');
+      const pos = editingProject?.thumbnailPosition || 'center center';
       preview.src = URL.createObjectURL(file);
-      preview.style.display = 'block';
+      preview.style.objectPosition = pos;
+      if (previewWrap) previewWrap.style.display = 'block';
+      // Reset active focal point dot
+      document.querySelectorAll('.fp-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.pos === pos);
+      });
     });
   }
+
+  // Focal point grid
+  document.getElementById('focal-point-grid')?.addEventListener('click', e => {
+    const btn = e.target.closest('.fp-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const pos = btn.dataset.pos;
+    if (editingProject) editingProject.thumbnailPosition = pos;
+    document.querySelectorAll('.fp-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const preview = document.getElementById('edit-image-preview');
+    if (preview) preview.style.objectPosition = pos;
+  });
 
   // Escape key
   document.addEventListener('keydown', e => {
