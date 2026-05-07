@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Vedha Mereddy — Design & Engineering Portfolio" />
+  <title>Vedha Mereddy</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jodit@3/build/jodit.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jodit@3/build/jodit.min.js"></script>
+</head>
+<body>
+
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ── Intro animation ──────────────────────────────────── -->
+  <div id="intro" aria-hidden="true">
+    <div class="intro-inner">
+      <div class="intro-name">
+        <span class="intro-letter" style="--i:0">V</span><span class="intro-letter" style="--i:1">E</span><span class="intro-letter" style="--i:2">D</span><span class="intro-letter" style="--i:3">H</span><span class="intro-letter" style="--i:4">A</span><span class="intro-space"> </span><span class="intro-letter" style="--i:5">M</span><span class="intro-letter" style="--i:6">E</span><span class="intro-letter" style="--i:7">R</span><span class="intro-letter" style="--i:8">E</span><span class="intro-letter" style="--i:9">D</span><span class="intro-letter" style="--i:10">D</span><span class="intro-letter" style="--i:11">Y</span>
+      </div>
+      <div class="intro-rule"></div>
+      <p class="intro-sub">Design &amp; Engineering Portfolio</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation ───────────────────────────────────────── -->
+  <nav id="nav">
+    <div class="container">
+      <span class="nav-logo"><!-- filled by JS --></span>
+      <ul class="nav-links"><!-- filled by JS --></ul>
+    </div>
+  </nav>
+
+  <!-- ── Hero — full screen ───────────────────────────────── -->
+  <section id="hero">
+    <div class="container hero-content">
+
+      <div class="hero-bottom">
+        <div class="hero-bottom-left">
+          <h1 class="hero-headline"><!-- filled by JS --></h1>
+          <div class="hero-links"><!-- filled by JS --></div>
+        </div>
+      </div>
+
+      <div class="hero-scroll-cta">
+        <span>scroll to view projects</span>
+        <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M1 1l9 9 9-9"/>
+        </svg>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Projects ──────────────────────────────────────────── -->
+  <section id="projects">
+    <div class="container">
+      <p class="section-label">01 &nbsp; Selected Work</p>
+      <div class="projects-grid"><!-- filled by JS --></div>
+    </div>
+  </section>
+
+  <!-- ── About ─────────────────────────────────────────────── -->
+  <section id="about">
+    <div class="container">
+      <p class="section-label">02 &nbsp; About</p>
+      <div class="about-grid">
+        <div class="about-text fade-in"><!-- filled by JS --></div>
+        <div class="skills-grid"><!-- filled by JS --></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Contact ───────────────────────────────────────────── -->
+  <section id="contact">
+    <div class="container">
+      <p class="section-label">03 &nbsp; Contact</p>
+      <h2 class="contact-headline">
+        Let's build<br/><em>something together.</em>
+      </h2>
+      <div class="contact-links"><!-- filled by JS --></div>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer>
+    <div class="container">
+      <span class="footer-copy"><!-- filled by JS --></span>
+      <span class="footer-copy">Built with HTML / CSS / JS</span>
+    </div>
+  </footer>
+
+  <!-- ── Project modal ─────────────────────────────────────── -->
+  <div id="project-modal" aria-modal="true" role="dialog" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <button class="modal-close" aria-label="Close">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M1 1l12 12M13 1L1 13"/>
+        </svg>
+      </button>
+      <div class="modal-inner">
+        <h2 class="modal-title"></h2>
+        <div class="modal-tags"></div>
+        <p class="modal-summary"></p>
+        <div class="modal-details"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Admin login modal ─────────────────────────────────── -->
+  <div id="admin-login-modal">
+    <div id="admin-login-backdrop" class="admin-backdrop"></div>
+    <div class="admin-panel">
+      <button id="admin-login-close" class="admin-close">&times;</button>
+      <h2 class="admin-panel-title">Admin Login</h2>
+      <form id="admin-login-form">
+        <div class="admin-field">
+          <label>Email</label>
+          <input type="email" id="admin-email" required />
+        </div>
+        <div class="admin-field">
+          <label>Password</label>
+          <input type="password" id="admin-password" required />
+        </div>
+        <p id="admin-login-error" class="admin-error"></p>
+        <button type="submit" class="admin-btn primary">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Admin edit modal ────────────────────────────────────── -->
+  <div id="admin-edit-modal">
+    <div id="admin-edit-backdrop" class="admin-backdrop"></div>
+    <div class="admin-panel large">
+      <button id="admin-edit-close" class="admin-close">&times;</button>
+      <h2 class="admin-modal-title admin-panel-title">Edit Project</h2>
+      <div class="admin-edit-body">
+        <div class="admin-field">
+          <label>Title</label>
+          <input type="text" id="edit-title" />
+        </div>
+        <div class="admin-field">
+          <label>Summary</label>
+          <textarea id="edit-summary" rows="3"></textarea>
+        </div>
+        <div class="admin-field">
+          <label>Content Blocks</label>
+          <div id="blocks-container"></div>
+          <button type="button" class="admin-btn" onclick="addBlock('text')" style="margin-top: 0.75rem;">+ Add Text Block</button>
+          <button type="button" class="admin-btn" onclick="addBlock('heading')" style="margin-top: 0.5rem;">+ Add Heading</button>
+          <button type="button" class="admin-btn" onclick="addBlock('image')" style="margin-top: 0.5rem;">+ Add Image</button>
+          <button type="button" class="admin-btn" onclick="addBlock('image-row')" style="margin-top: 0.5rem;">+ Add Image Row</button>
+        </div>
+        <div class="admin-field">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="edit-tags" placeholder="Tag1, Tag2, Tag3" />
+        </div>
+        <div class="admin-field">
+          <label>Project Link (optional)</label>
+          <input type="url" id="edit-link" placeholder="https://" />
+        </div>
+        <div class="admin-field">
+          <label>Image</label>
+          <input type="file" id="edit-image-input" accept="image/*" />
+          <img id="edit-image-preview" src="" alt="" />
+        </div>
+      </div>
+      <div class="admin-edit-footer">
+        <button id="edit-delete-btn" class="admin-btn danger">Delete project</button>
+        <button id="edit-save-btn" class="admin-btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Admin toolbar ──────────────────────────────────────── -->
+  <div id="admin-toolbar">
+    <span class="admin-toolbar-label">Admin</span>
+    <button id="admin-add-btn" class="admin-btn small">+ Add</button>
+    <button id="admin-logout-btn" class="admin-btn small danger">Logout</button>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="cms.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
