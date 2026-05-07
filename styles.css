@@ -519,7 +519,7 @@ body.intro-done .hero-word {
 #about { background: var(--bg); }
 .about-grid {
   display: grid;
-  grid-template-columns: 38% 55%;
+  grid-template-columns: 26% 67%;
   gap: 7%;
   align-items: center;
 }
