@@ -23,6 +23,39 @@ async function fetchImageAsBase64(url) {
   } catch { return null; }
 }
 
+function getImageDimensions(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload  = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = dataUrl;
+  });
+}
+
+// Scale image to fit within maxW x maxH preserving aspect ratio
+function fitImage(natW, natH, maxW, maxH) {
+  const ratio = natW / natH;
+  let w = maxW;
+  let h = w / ratio;
+  if (h > maxH) { h = maxH; w = h * ratio; }
+  return { w, h };
+}
+
+function imgFormat(dataUrl) {
+  const m = dataUrl.match(/^data:image\/(\w+);/);
+  if (!m) return 'JPEG';
+  const t = m[1].toUpperCase();
+  return t === 'JPG' ? 'JPEG' : t;
+}
+
+async function loadImage(url, maxW, maxH) {
+  const data = await fetchImageAsBase64(url);
+  if (!data) return null;
+  const { w: natW, h: natH } = await getImageDimensions(data);
+  const { w, h } = fitImage(natW, natH, maxW, maxH);
+  return { data, w, h, fmt: imgFormat(data) };
+}
+
 async function exportProjectsPDF() {
   const btn = document.getElementById('export-pdf-btn');
   btn.textContent = 'Generating…';
@@ -32,223 +65,227 @@ async function exportProjectsPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-    const W       = 210;
-    const H       = 297;
-    const margin  = 18;
-    const cw      = W - margin * 2;
+    const PW     = 210;
+    const PH     = 297;
+    const M      = 20;   // margin
+    const CW     = PW - M * 2; // content width
 
-    // ── Palette ──────────────────────────────────────────────
-    const BG      = [15,  13,  10];
-    const INK     = [242, 237, 228];
-    const MID     = [190, 183, 172];
-    const MUTED   = [120, 112, 104];
-    const ACCENT  = [201, 169, 127];
-    const BORDER  = [42,  37,  30];
+    // ── Palette (light) ──────────────────────────────────────
+    const BG     = [252, 250, 247];
+    const INK    = [18,  15,  12];
+    const MID    = [70,  62,  54];
+    const MUTED  = [140, 130, 120];
+    const ACCENT = [160, 120, 72];
+    const BORDER = [210, 204, 196];
 
-    function bg() {
+    function fillBg() {
       doc.setFillColor(...BG);
-      doc.rect(0, 0, W, H, 'F');
+      doc.rect(0, 0, PW, PH, 'F');
     }
 
-    function hRule(y, opacity = 1) {
+    function rule(y, x1 = M, x2 = PW - M) {
       doc.setDrawColor(...BORDER);
       doc.setLineWidth(0.25);
-      doc.line(margin, y, W - margin, y);
+      doc.line(x1, y, x2, y);
     }
 
-    function checkPage(y, needed = 20) {
-      if (y + needed > H - margin) {
+    // Adds a new page if remaining space < needed, returns new y
+    function guard(y, needed) {
+      if (y + needed > PH - M) {
         doc.addPage();
-        bg();
-        return margin;
+        fillBg();
+        return M;
       }
       return y;
     }
 
-    // ── Cover page ───────────────────────────────────────────
-    bg();
+    // Writes wrapped text, returns new y
+    function writeText(text, x, y, size, color, style = 'normal', maxW = CW) {
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(text, maxW);
+      lines.forEach(line => {
+        y = guard(y, size * 0.4);
+        doc.text(line, x, y);
+        y += size * 0.42;
+      });
+      return y;
+    }
 
-    // Left accent bar
-    doc.setFillColor(...ACCENT);
-    doc.rect(margin, 70, 1.2, 42, 'F');
+    // ── Cover page ───────────────────────────────────────────
+    fillBg();
+
+    // Accent bar
+    doc.setFillColor(...BORDER);
+    doc.rect(M, 72, 1.5, 40, 'F');
 
     // Name
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(36);
+    doc.setFontSize(40);
     doc.setTextColor(...INK);
-    doc.text('VEDHA', margin + 6, 88);
-
+    doc.text('VEDHA', M + 7, 90);
     doc.setTextColor(...ACCENT);
-    doc.text('MEREDDY', margin + 6, 103);
+    doc.text('MEREDDY', M + 7, 107);
 
-    // Subtitle
+    // Role
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
-    doc.text('DESIGN & ENGINEERING PORTFOLIO', margin + 6, 115);
+    doc.text('DESIGN & ENGINEERING PORTFOLIO', M + 7, 118);
 
-    hRule(122);
+    rule(126);
 
-    // Date + project count
+    // Date
     doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
     const projects = window._projects || PORTFOLIO.projects;
     doc.text(
       `${projects.length} Projects  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`,
-      margin + 6, 129
+      M + 7, 133
     );
 
     // Table of contents
-    let tocY = 160;
-    doc.setFontSize(7);
+    let tocY = 165;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
     doc.setTextColor(...MUTED);
-    doc.text('CONTENTS', margin, tocY);
-    tocY += 6;
-    hRule(tocY);
-    tocY += 6;
+    doc.text('SELECTED WORK', M, tocY);
+    tocY += 5;
+    rule(tocY);
+    tocY += 7;
 
     projects.forEach((p, i) => {
-      doc.setTextColor(...MID);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.text(`${String(i + 1).padStart(2, '0')}  ${p.title}`, margin, tocY);
-      tocY += 6.5;
+      doc.setFontSize(9);
+      doc.setTextColor(...MID);
+      doc.text(`${String(i + 1).padStart(2, '0')}`, M, tocY);
+      doc.setTextColor(...INK);
+      doc.text(p.title, M + 10, tocY);
+      tocY += 7;
     });
 
     // Footer
     doc.setFontSize(7);
     doc.setTextColor(...MUTED);
-    doc.text('vedhamereddy.github.io/Vedha-Mereddy-Portfolio', margin, H - 12);
+    doc.text('vedhamereddy.github.io/Vedha-Mereddy-Portfolio', M, PH - 12);
 
     // ── Project pages ────────────────────────────────────────
     for (let idx = 0; idx < projects.length; idx++) {
       const p = projects[idx];
       doc.addPage();
-      bg();
+      fillBg();
 
-      let y = margin;
+      let y = M;
 
-      // Index label
+      // Index / count
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...MUTED);
-      doc.text(`${String(idx + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}`, margin, y);
+      doc.text(`${String(idx + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}`, M, y);
       y += 5;
 
-      hRule(y);
-      y += 9;
+      rule(y);
+      y += 10;
 
       // Title
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
+      doc.setFontSize(22);
       doc.setTextColor(...ACCENT);
-      const titleLines = doc.splitTextToSize(p.title, cw);
-      doc.text(titleLines, margin, y);
-      y += titleLines.length * 8 + 3;
+      const titleLines = doc.splitTextToSize(p.title, CW);
+      doc.text(titleLines, M, y);
+      y += titleLines.length * 9 + 3;
 
       // Tags
       if (p.tags && p.tags.length > 0) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...MUTED);
-        doc.text(p.tags.join('   ·   ').toUpperCase(), margin, y);
-        y += 9;
+        doc.text(p.tags.join('   ·   ').toUpperCase(), M, y);
+        y += 10;
       }
 
       // Summary
       if (p.summary) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(...MID);
-        const sumLines = doc.splitTextToSize(p.summary, cw);
-        doc.text(sumLines, margin, y);
-        y += sumLines.length * 5 + 8;
+        y = writeText(p.summary, M, y, 10, MID);
+        y += 6;
       }
 
-      // Project thumbnail image
+      // Thumbnail — constrained width and proper aspect ratio
       if (p.image) {
-        const imgData = await fetchImageAsBase64(p.image);
-        if (imgData) {
-          const imgH = 55;
-          y = checkPage(y, imgH + 6);
-          try {
-            doc.addImage(imgData, 'JPEG', margin, y, cw, imgH, '', 'FAST');
-            y += imgH + 8;
-          } catch {}
+        const img = await loadImage(p.image, CW * 0.7, 65);
+        if (img) {
+          y = guard(y, img.h + 10);
+          const x = M + (CW - img.w) / 2;
+          try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
+          y += img.h + 10;
         }
       }
 
       // Content blocks
       if (p.blocks && p.blocks.length > 0) {
-        // Divider before blocks
-        hRule(y);
-        y += 8;
+        rule(y);
+        y += 9;
 
         for (const block of p.blocks) {
-          if (block.type === 'heading') {
-            const text = (block.content || '').trim();
-            if (!text) continue;
-            y = checkPage(y, 12);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.setTextColor(...INK);
-            doc.text(text, margin, y);
-            y += 7;
 
-          } else if (block.type === 'text') {
-            const text = htmlToText(block.content);
-            if (!text) continue;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
-            doc.setTextColor(...MID);
-            const lines = doc.splitTextToSize(text, cw);
-            for (const line of lines) {
-              y = checkPage(y, 5);
-              doc.text(line, margin, y);
-              y += 4.8;
-            }
+          if (block.type === 'heading' && block.content?.trim()) {
+            y = guard(y, 14);
+            y = writeText(block.content.trim(), M, y, 11, INK, 'bold');
             y += 3;
 
+          } else if (block.type === 'text' && block.content) {
+            const text = htmlToText(block.content);
+            if (!text) continue;
+            // Render line by line to handle bullet points cleanly
+            const paragraphs = text.split('\n').filter(l => l.trim());
+            for (const para of paragraphs) {
+              y = guard(y, 6);
+              y = writeText(para, M, y, 9, MID);
+            }
+            y += 4;
+
           } else if (block.type === 'image' && block.content) {
-            const imgData = await fetchImageAsBase64(block.content);
-            if (!imgData) continue;
-            const sizeRatio = parseFloat(block.size || '100') / 100;
-            const imgW = cw * sizeRatio;
-            const imgH = 50;
-            y = checkPage(y, imgH + 6);
-            const xOffset = block.align === 'center' ? margin + (cw - imgW) / 2
-              : block.align === 'right' ? margin + (cw - imgW) : margin;
-            try {
-              doc.addImage(imgData, 'JPEG', xOffset, y, imgW, imgH, '', 'FAST');
-              y += imgH + 6;
-            } catch {}
+            const sizeRatio  = parseFloat(block.size  || '100') / 100;
+            const maxW = CW * sizeRatio;
+            const img = await loadImage(block.content, maxW, 75);
+            if (!img) continue;
+            y = guard(y, img.h + 8);
+            const x = block.align === 'center' ? M + (CW - img.w) / 2
+              : block.align === 'right'  ? M + CW - img.w : M;
+            try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
+            y += img.h + 8;
 
           } else if (block.type === 'image-row' && block.images?.length) {
             const imgs = block.images.filter(im => im.url);
             if (!imgs.length) continue;
-            const slotW = (cw - (imgs.length - 1) * 4) / imgs.length;
-            const rowH  = 45;
-            y = checkPage(y, rowH + 6);
-            for (let j = 0; j < imgs.length; j++) {
-              const imgData = await fetchImageAsBase64(imgs[j].url);
-              if (!imgData) continue;
-              try {
-                doc.addImage(imgData, 'JPEG', margin + j * (slotW + 4), y, slotW, rowH, '', 'FAST');
-              } catch {}
+            const slotMaxW = (CW - (imgs.length - 1) * 4) / imgs.length;
+            const maxH = 55;
+            const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotMaxW, maxH)));
+            const rowH = Math.max(...loaded.filter(Boolean).map(im => im.h));
+            y = guard(y, rowH + 8);
+            let xCursor = M;
+            for (const img of loaded) {
+              if (!img) { xCursor += slotMaxW + 4; continue; }
+              try { doc.addImage(img.data, img.fmt, xCursor, y, img.w, img.h, '', 'FAST'); } catch {}
+              xCursor += slotMaxW + 4;
             }
-            y += rowH + 6;
+            y += rowH + 8;
           }
         }
       }
 
-      // Page number at bottom
+      // Page number
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...MUTED);
-      doc.text(`${idx + 2}`, W / 2, H - 10, { align: 'center' });
+      doc.text(String(idx + 2), PW / 2, PH - 10, { align: 'center' });
     }
 
-    doc.save(`Vedha-Mereddy-Portfolio.pdf`);
+    doc.save('Vedha-Mereddy-Portfolio.pdf');
+
   } catch (err) {
+    console.error(err);
     alert('PDF export failed: ' + err.message);
   } finally {
     btn.textContent = '↓ Export PDF';
