@@ -1,13 +1,52 @@
 // ── PDF Export ───────────────────────────────────────────────
 
-function htmlToText(html) {
-  if (!html) return '';
-  html = html.replace(/<\/p>/gi, '\n').replace(/<br\s*\/?>/gi, '\n');
-  html = html.replace(/<li[^>]*>/gi, '• ').replace(/<\/li>/gi, '\n');
-  html = html.replace(/<[^>]+>/g, '');
+// Parse Jodit HTML into structured objects for clean PDF rendering
+function parseHtmlContent(html) {
+  if (!html) return [];
   const div = document.createElement('div');
   div.innerHTML = html;
-  return (div.textContent || div.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
+  const result = [];
+
+  function processNode(node) {
+    if (node.nodeType === 3) {
+      const t = (node.textContent || '').trim();
+      if (t) result.push({ type: 'paragraph', text: t });
+      return;
+    }
+    const tag = (node.tagName || '').toLowerCase();
+    if (tag === 'p' || tag === 'div') {
+      const t = (node.textContent || '').trim();
+      if (t) result.push({ type: 'paragraph', text: t });
+    } else if (tag === 'ul') {
+      for (const li of node.querySelectorAll(':scope > li')) {
+        const t = (li.textContent || '').trim();
+        if (t) result.push({ type: 'bullet', text: t });
+      }
+    } else if (tag === 'ol') {
+      let n = 0;
+      for (const li of node.querySelectorAll(':scope > li')) {
+        n++;
+        const t = (li.textContent || '').trim();
+        if (t) result.push({ type: 'numbered', text: t, num: n });
+      }
+    } else if (/^h[1-6]$/.test(tag)) {
+      const t = (node.textContent || '').trim();
+      if (t) result.push({ type: 'subheading', text: t });
+    } else if (tag === 'table') {
+      node.querySelectorAll('tr').forEach((row, ri) => {
+        const cells = Array.from(row.querySelectorAll('td, th'))
+          .map(c => (c.textContent || '').trim()).filter(Boolean);
+        if (cells.length) result.push({ type: ri === 0 ? 'table-header' : 'table-row', cells });
+      });
+    } else if (tag === 'br' || tag === 'hr') {
+      // skip
+    } else {
+      for (const child of node.childNodes) processNode(child);
+    }
+  }
+
+  for (const child of div.childNodes) processNode(child);
+  return result.filter(item => (item.text && item.text.trim()) || (item.cells && item.cells.length));
 }
 
 async function fetchImageAsBase64(url) {
@@ -32,11 +71,9 @@ function getImageDimensions(dataUrl) {
   });
 }
 
-// Scale image to fit within maxW x maxH preserving aspect ratio
 function fitImage(natW, natH, maxW, maxH) {
   const ratio = natW / natH;
-  let w = maxW;
-  let h = w / ratio;
+  let w = maxW, h = w / ratio;
   if (h > maxH) { h = maxH; w = h * ratio; }
   return { w, h };
 }
@@ -65,18 +102,17 @@ async function exportProjectsPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-    const PW     = 210;
-    const PH     = 297;
-    const M      = 20;   // margin
-    const CW     = PW - M * 2; // content width
+    const PW = 210, PH = 297, M = 22, CW = PW - M * 2;
+    const LH = 5.0;   // base line height (mm)
 
-    // ── Palette (light) ──────────────────────────────────────
     const BG     = [252, 250, 247];
-    const INK    = [18,  15,  12];
-    const MID    = [70,  62,  54];
-    const MUTED  = [140, 130, 120];
-    const ACCENT = [160, 120, 72];
-    const BORDER = [210, 204, 196];
+    const INK    = [22,  18,  14];
+    const MID    = [78,  66,  54];
+    const MUTED  = [148, 136, 122];
+    const ACCENT = [160, 118, 68];
+    const BORDER = [214, 207, 198];
+
+    // ── Helpers ──────────────────────────────────────────────
 
     function fillBg() {
       doc.setFillColor(...BG);
@@ -85,206 +121,296 @@ async function exportProjectsPDF() {
 
     function rule(y, x1 = M, x2 = PW - M) {
       doc.setDrawColor(...BORDER);
-      doc.setLineWidth(0.25);
+      doc.setLineWidth(0.2);
       doc.line(x1, y, x2, y);
     }
 
-    // Adds a new page if remaining space < needed, returns new y
     function guard(y, needed) {
-      if (y + needed > PH - M) {
+      if (y + needed > PH - M - 12) {
         doc.addPage();
         fillBg();
-        return M;
+        return M + 4;
       }
       return y;
     }
 
-    // Writes wrapped text, returns new y
-    function writeText(text, x, y, size, color, style = 'normal', maxW = CW) {
+    // Wrapped text block — returns new y
+    function writeWrapped(text, x, y, size, color, style = 'normal', maxW = CW) {
       doc.setFont('helvetica', style);
       doc.setFontSize(size);
       doc.setTextColor(...color);
-      const lines = doc.splitTextToSize(text, maxW);
-      lines.forEach(line => {
-        y = guard(y, size * 0.4);
+      const lh = size * 0.46;
+      for (const line of doc.splitTextToSize(text, maxW)) {
+        y = guard(y, lh + 1);
         doc.text(line, x, y);
-        y += size * 0.42;
-      });
+        y += lh;
+      }
       return y;
     }
 
-    // ── Compact header (top of page 1) ───────────────────────
+    // Render parsed HTML content lines — returns new y
+    function renderContent(items, startY, colX = M, colW = CW) {
+      let y = startY;
+      for (const item of items) {
+
+        if (item.type === 'paragraph') {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(...MID);
+          for (const line of doc.splitTextToSize(item.text, colW)) {
+            y = guard(y, LH + 1);
+            doc.text(line, colX, y);
+            y += LH;
+          }
+          y += 2.5; // paragraph gap
+
+        } else if (item.type === 'bullet') {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(...MID);
+          const wrapped = doc.splitTextToSize(item.text, colW - 8);
+          y = guard(y, LH + 1);
+          doc.text('—', colX + 1, y);
+          for (let i = 0; i < wrapped.length; i++) {
+            if (i > 0) y = guard(y, LH + 1);
+            doc.text(wrapped[i], colX + 7, y);
+            y += LH;
+          }
+          y += 1.2;
+
+        } else if (item.type === 'numbered') {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(...MID);
+          const wrapped = doc.splitTextToSize(item.text, colW - 8);
+          y = guard(y, LH + 1);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${item.num}.`, colX + 1, y);
+          doc.setFont('helvetica', 'normal');
+          for (let i = 0; i < wrapped.length; i++) {
+            if (i > 0) y = guard(y, LH + 1);
+            doc.text(wrapped[i], colX + 7, y);
+            y += LH;
+          }
+          y += 1.2;
+
+        } else if (item.type === 'subheading') {
+          y += 2;
+          y = guard(y, 9);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10.5);
+          doc.setTextColor(...INK);
+          doc.text(item.text, colX, y);
+          y += 6.5;
+
+        } else if (item.type === 'table-header' || item.type === 'table-row') {
+          const colWCell = colW / Math.max(item.cells.length, 1);
+          y = guard(y, 6);
+          if (item.type === 'table-header') {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...INK);
+          } else {
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...MID);
+          }
+          doc.setFontSize(9);
+          item.cells.forEach((cell, ci) => {
+            doc.text(String(cell).substring(0, 45), colX + ci * colWCell, y);
+          });
+          y += 5;
+          if (item.type === 'table-header') rule(y - 1, colX, colX + colW);
+        }
+      }
+      return y;
+    }
+
+    // ── Page 1 header ─────────────────────────────────────────
     fillBg();
     const projects = window._projects || PORTFOLIO.projects;
 
-    // Name + subtitle on one line
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
+    doc.setFontSize(13);
     doc.setTextColor(...INK);
-    doc.text('VEDHA MEREDDY', M, M + 2);
+    doc.text('VEDHA MEREDDY', M, M + 3);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
     doc.text(
       `Design & Engineering Portfolio  ·  ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`,
-      M, M + 8
+      M, M + 9.5
     );
+    rule(M + 15);
+    let y = M + 24;
 
-    rule(M + 13);
-
-    let firstProjectY = M + 22; // projects start right after header
-
-    // ── Project pages ────────────────────────────────────────
+    // ── Projects ──────────────────────────────────────────────
     for (let idx = 0; idx < projects.length; idx++) {
       const p = projects[idx];
 
-      if (idx === 0) {
-        // First project continues on page 1 after the header
-      } else {
+      if (idx > 0) {
         doc.addPage();
         fillBg();
-        firstProjectY = M;
+        y = M;
       }
 
-      let y = firstProjectY;
+      // ── Project header ──────────────────────────────────────
 
-      // Index / count
+      // Counter
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...MUTED);
       doc.text(`${String(idx + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}`, M, y);
-      y += 5;
-
+      y += 4.5;
       rule(y);
-      y += 10;
+      y += 12;
 
       // Title
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.setTextColor(...ACCENT);
       const titleLines = doc.splitTextToSize(p.title, CW);
       doc.text(titleLines, M, y);
-      y += titleLines.length * 9 + 3;
+      y += titleLines.length * 8.8 + 5;
 
       // Tags
-      if (p.tags && p.tags.length > 0) {
+      if (p.tags && p.tags.length) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...MUTED);
+        doc.setCharSpace(0.8);
         doc.text(p.tags.join('   ·   ').toUpperCase(), M, y);
+        doc.setCharSpace(0);
+        y += 9;
+      }
+
+      rule(y);
+      y += 11;
+
+      // Summary (italic)
+      if (p.summary) {
+        y = writeWrapped(p.summary, M, y, 10.5, MID, 'italic');
         y += 10;
       }
 
-      // Summary
-      if (p.summary) {
-        y = writeText(p.summary, M, y, 10, MID);
-        y += 6;
-      }
-
-      // Thumbnail — constrained width and proper aspect ratio
+      // Thumbnail — max 50% wide so it doesn't dominate
       if (p.image) {
-        const img = await loadImage(p.image, CW * 0.7, 65);
+        const img = await loadImage(p.image, CW * 0.5, 56);
         if (img) {
           y = guard(y, img.h + 10);
           const x = M + (CW - img.w) / 2;
           try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
-          y += img.h + 10;
+          y += img.h + 12;
         }
       }
 
-      // Content blocks
-      if (p.blocks && p.blocks.length > 0) {
+      // ── Content blocks ──────────────────────────────────────
+      if (p.blocks && p.blocks.length) {
         rule(y);
-        y += 9;
+        y += 12;
 
         for (const block of p.blocks) {
 
+          // Section heading
           if (block.type === 'heading' && block.content?.trim()) {
-            y = guard(y, 14);
-            y = writeText(block.content.trim(), M, y, 11, INK, 'bold');
-            y += 3;
-
-          } else if (block.type === 'text' && block.content) {
-            const text = htmlToText(block.content);
-            if (!text) continue;
-            // Render line by line to handle bullet points cleanly
-            const paragraphs = text.split('\n').filter(l => l.trim());
-            for (const para of paragraphs) {
-              y = guard(y, 6);
-              y = writeText(para, M, y, 9, MID);
-            }
+            y = guard(y, 16);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12.5);
+            doc.setTextColor(...INK);
+            doc.text(block.content.trim(), M, y);
             y += 4;
+            // Short accent underline
+            doc.setDrawColor(...ACCENT);
+            doc.setLineWidth(0.5);
+            doc.line(M, y, M + 24, y);
+            doc.setLineWidth(0.2);
+            y += 8;
 
+          // Rich text
+          } else if (block.type === 'text' && block.content) {
+            const items = parseHtmlContent(block.content);
+            if (items.length) {
+              y = renderContent(items, y);
+              y += 3;
+            }
+
+          // Single image
           } else if (block.type === 'image' && block.content) {
-            const sizeRatio  = parseFloat(block.size  || '100') / 100;
-            const maxW = CW * sizeRatio;
-            const img = await loadImage(block.content, maxW, 75);
+            const sizeRatio = parseFloat(block.size || '100') / 100;
+            const img = await loadImage(block.content, CW * sizeRatio, 80);
             if (!img) continue;
             y = guard(y, img.h + 8);
             const x = block.align === 'center' ? M + (CW - img.w) / 2
-              : block.align === 'right'  ? M + CW - img.w : M;
+              : block.align === 'right' ? M + CW - img.w : M;
             try { doc.addImage(img.data, img.fmt, x, y, img.w, img.h, '', 'FAST'); } catch {}
             y += img.h + 8;
 
+          // Image row
           } else if (block.type === 'image-row' && block.images?.length) {
             const imgs = block.images.filter(im => im.url);
             if (!imgs.length) continue;
-            const slotMaxW = (CW - (imgs.length - 1) * 4) / imgs.length;
-            const maxH = 55;
-            const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotMaxW, maxH)));
-            const rowH = Math.max(...loaded.filter(Boolean).map(im => im.h));
+            const gap = 4;
+            const slotW = (CW - (imgs.length - 1) * gap) / imgs.length;
+            const loaded = await Promise.all(imgs.map(im => loadImage(im.url, slotW, 55)));
+            const rowH = Math.max(...loaded.filter(Boolean).map(im => im.h), 0);
             y = guard(y, rowH + 8);
-            let xCursor = M;
+            let xc = M;
             for (const img of loaded) {
-              if (!img) { xCursor += slotMaxW + 4; continue; }
-              try { doc.addImage(img.data, img.fmt, xCursor, y, img.w, img.h, '', 'FAST'); } catch {}
-              xCursor += slotMaxW + 4;
+              if (!img) { xc += slotW + gap; continue; }
+              try { doc.addImage(img.data, img.fmt, xc, y, img.w, img.h, '', 'FAST'); } catch {}
+              xc += slotW + gap;
             }
             y += rowH + 8;
 
+          // Image + text side by side
           } else if (block.type === 'image-text') {
-            const imgWidthPct = parseFloat(block.imageWidth || '40') / 100;
-            const textW = CW * (1 - imgWidthPct) - 6;
-            const imgMaxW = CW * imgWidthPct;
-            const text = htmlToText(block.content || '');
-            const paragraphs = text.split('\n').filter(l => l.trim());
+            const imgPct   = parseFloat(block.imageWidth || '40') / 100;
+            const imgMaxW  = CW * imgPct;
+            const textColW = CW * (1 - imgPct) - 6;
+            const imgX     = block.imagePosition === 'right' ? M + textColW + 6 : M;
+            const textX    = block.imagePosition === 'right' ? M : M + imgMaxW + 6;
 
-            let img = null;
-            if (block.image) img = await loadImage(block.image, imgMaxW, 80);
+            const img   = block.image ? await loadImage(block.image, imgMaxW, 80) : null;
+            const items = parseHtmlContent(block.content || '');
 
-            const imgH = img ? img.h : 0;
-            // Estimate text height
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
+            // Estimate text column height
+            doc.setFontSize(10);
             let estTextH = 0;
-            for (const para of paragraphs) {
-              const lines = doc.splitTextToSize(para, textW);
-              estTextH += lines.length * 9 * 0.42 + 2;
+            for (const item of items) {
+              if (!item.text) continue;
+              const indent = item.type === 'paragraph' ? 0 : 8;
+              const lines  = doc.splitTextToSize(item.text, textColW - indent);
+              estTextH += lines.length * LH + (item.type === 'paragraph' ? 2.5 : 1.2);
             }
-            const blockH = Math.max(imgH, estTextH) + 8;
-            y = guard(y, blockH);
 
-            const imgX = block.imagePosition === 'right' ? M + textW + 6 : M;
-            const textX = block.imagePosition === 'right' ? M : M + imgMaxW + 6;
+            const blockH = Math.max(img ? img.h : 0, estTextH) + 8;
+            y = guard(y, blockH);
 
             if (img) {
               try { doc.addImage(img.data, img.fmt, imgX, y, img.w, img.h, '', 'FAST'); } catch {}
             }
 
+            // Render text column inline (no guard — already guarded above)
             let ty = y;
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
+            doc.setFontSize(10);
             doc.setTextColor(...MID);
-            for (const para of paragraphs) {
-              const lines = doc.splitTextToSize(para, textW);
-              lines.forEach(line => {
-                doc.text(line, textX, ty);
-                ty += 9 * 0.42;
-              });
-              ty += 2;
+            for (const item of items) {
+              if (!item.text) continue;
+              if (item.type === 'bullet') {
+                doc.text('—', textX, ty);
+                for (const l of doc.splitTextToSize(item.text, textColW - 7)) {
+                  doc.text(l, textX + 6, ty);
+                  ty += LH;
+                }
+                ty += 1.2;
+              } else {
+                for (const l of doc.splitTextToSize(item.text, textColW)) {
+                  doc.text(l, textX, ty);
+                  ty += LH;
+                }
+                ty += 2.5;
+              }
             }
-
             y += blockH;
           }
         }
@@ -294,7 +420,7 @@ async function exportProjectsPDF() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...MUTED);
-      doc.text(String(idx + 2), PW / 2, PH - 10, { align: 'center' });
+      doc.text(String(doc.internal.getNumberOfPages()), PW / 2, PH - 10, { align: 'center' });
     }
 
     doc.save('Vedha-Mereddy-Portfolio.pdf');
