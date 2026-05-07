@@ -363,10 +363,10 @@ async function exportProjectsPDF() {
           if (block.type === 'heading' && block.content?.trim()) {
             y = guard(y, 16);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12.5);
+            doc.setFontSize(10.5);
             doc.setTextColor(...INK);
             doc.text(block.content.trim(), M, y);
-            y += 9;
+            y += 7;
 
           } else if (block.type === 'text' && block.content) {
             const items = parseHtmlContent(block.content);
