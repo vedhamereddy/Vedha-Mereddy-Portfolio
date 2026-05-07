@@ -19,10 +19,10 @@ I'm a Mechatronics student at Waterloo focused on Human-Robot Interaction. I'm d
 
   // ── Social / contact links ────────────────────────────────
   links: [
-    { label: "GitHub",   href: "https://github.com/" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/" },
+    { label: "GitHub",   href: "https://github.com/vedhamereddy" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/vedha-mereddy/" },
     { label: "Email",    href: "mailto:you@example.com" },
-    { label: "Resume",   href: "/resume.pdf" },
+    { label: "Resume",   href: "https://drive.google.com/file/d/1VUkouRimTswp-4iCH2pijhXCZyq820e9/view?usp=sharing" },
   ],
 
   // ── Skills / tools ────────────────────────────────────────
