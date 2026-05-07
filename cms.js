@@ -286,6 +286,7 @@ function renderBlockEditor() {
         <option value="image"      ${block.type === 'image'      ? 'selected' : ''}>Image</option>
         <option value="image-row"  ${block.type === 'image-row'  ? 'selected' : ''}>Image Row</option>
         <option value="image-text" ${block.type === 'image-text' ? 'selected' : ''}>Image + Text</option>
+        <option value="video"      ${block.type === 'video'      ? 'selected' : ''}>Video</option>
       </select>
       ${block.type === 'text'
         ? `<textarea class="block-jodit" id="editor-${i}"></textarea>`
@@ -348,7 +349,27 @@ function renderBlockEditor() {
                    </div>
                    <textarea class="block-jodit" id="editor-${i}"></textarea>
                  </div>`
-              : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
+              : block.type === 'video'
+                ? `<div class="block-video-upload">
+                     ${block.content ? `<video src="${block.content}" class="block-video-preview" autoplay muted playsinline loop></video>` : ''}
+                     <label class="admin-btn block-upload-btn">
+                       <span>${block.content ? 'Change Video' : 'Upload Video'}</span>
+                       <input type="file" accept="video/*" class="block-video-input" data-index="${i}" />
+                     </label>
+                     <div class="block-image-controls" style="margin-top:0.5rem;">
+                       <select class="block-video-size" data-index="${i}">
+                         <option value="100%" ${(block.size||'100%')==='100%'?'selected':''}>Full width</option>
+                         <option value="75%"  ${block.size==='75%' ?'selected':''}>Large (75%)</option>
+                         <option value="50%"  ${block.size==='50%' ?'selected':''}>Medium (50%)</option>
+                         <option value="33%"  ${block.size==='33%' ?'selected':''}>Small (33%)</option>
+                       </select>
+                       <label class="block-loop-label">
+                         <input type="checkbox" class="block-video-loop" data-index="${i}" ${block.loop !== false ? 'checked' : ''} />
+                         Loop
+                       </label>
+                     </div>
+                   </div>`
+                : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
       }
     </div>
   `).join('');
@@ -456,6 +477,35 @@ function renderBlockEditor() {
     });
   });
 
+  // Video upload listeners
+  container.querySelectorAll('.block-video-input').forEach(input => {
+    input.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const i = parseInt(e.target.dataset.index);
+      const span = e.target.previousElementSibling;
+      span.textContent = 'Uploading…';
+      try {
+        const url = await uploadProjectImage(file);
+        editingBlocks[i].content = url;
+        renderBlockEditor();
+      } catch (err) {
+        alert('Video upload failed: ' + err.message);
+        span.textContent = 'Upload Video';
+      }
+    });
+  });
+  container.querySelectorAll('.block-video-size').forEach(select => {
+    select.addEventListener('change', e => {
+      editingBlocks[parseInt(e.target.dataset.index)].size = e.target.value;
+    });
+  });
+  container.querySelectorAll('.block-video-loop').forEach(checkbox => {
+    checkbox.addEventListener('change', e => {
+      editingBlocks[parseInt(e.target.dataset.index)].loop = e.target.checked;
+    });
+  });
+
   // Attach listeners for non-Jodit text inputs
   container.querySelectorAll('.block-type').forEach(select => {
     select.addEventListener('change', e => {
@@ -464,6 +514,7 @@ function renderBlockEditor() {
       editingBlocks[i].type = newType;
       if (newType === 'image-row'  && !editingBlocks[i].images) editingBlocks[i].images = [];
       if (newType === 'image-text' && !editingBlocks[i].image) { editingBlocks[i].image = ''; editingBlocks[i].imageWidth = '40%'; editingBlocks[i].imagePosition = 'left'; }
+      if (newType === 'video' && editingBlocks[i].loop === undefined) { editingBlocks[i].loop = true; editingBlocks[i].size = '100%'; }
       renderBlockEditor();
     });
   });
@@ -480,6 +531,7 @@ function addBlock(type = 'text') {
   const block = { type, content: '' };
   if (type === 'image-row')  { block.images = []; }
   if (type === 'image-text') { block.image = ''; block.imageWidth = '40%'; block.imagePosition = 'left'; }
+  if (type === 'video')      { block.loop = true; block.size = '100%'; }
   editingBlocks.push(block);
   renderBlockEditor();
 }

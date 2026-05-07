@@ -136,6 +136,14 @@ function initModal() {
             </span>`
           ).join('')}</div>`;
         }
+        if (block.type === 'video') {
+          const align = block.align || 'left';
+          const wrapStyle = align === 'center' ? 'margin:0 auto;' : align === 'right' ? 'margin-left:auto;' : '';
+          const loopAttr = block.loop !== false ? 'loop' : '';
+          return `<div style="width:${block.size||'100%'};${wrapStyle}">
+            <video src="${block.content}" class="modal-block-video" autoplay muted playsinline ${loopAttr} style="width:100%"></video>
+          </div>`;
+        }
         if (block.type === 'image-text') {
           const dir = block.imagePosition === 'right' ? 'row-reverse' : 'row';
           const imgW = block.imageWidth || '40%';
