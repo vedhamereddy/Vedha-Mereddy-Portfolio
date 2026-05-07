@@ -63,7 +63,10 @@
   <!-- ── Projects ──────────────────────────────────────────── -->
   <section id="projects">
     <div class="container">
-      <p class="section-label">01 &nbsp; Selected Work</p>
+      <div class="section-header">
+        <p class="section-label">01 &nbsp; Selected Work</p>
+        <button id="export-pdf-btn" onclick="exportProjectsPDF()">↓ Export PDF</button>
+      </div>
       <div class="projects-grid"><!-- filled by JS --></div>
     </div>
   </section>
@@ -174,9 +177,11 @@
     <button id="admin-logout-btn" class="admin-btn small danger">Logout</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="data.js"></script>
   <script src="supabase-config.js"></script>
   <script src="cms.js"></script>
   <script src="main.js"></script>
+  <script src="export.js"></script>
 </body>
 </html>

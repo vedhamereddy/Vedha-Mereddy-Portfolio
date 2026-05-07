@@ -182,6 +182,32 @@ section { padding: var(--space-xl) 0; }
   color: var(--ink-muted);
   margin-bottom: var(--space-lg);
 }
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+.section-header .section-label {
+  margin-bottom: 0;
+  flex: 1;
+}
+#export-pdf-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--ink-muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#export-pdf-btn:hover { color: var(--ink); border-color: var(--ink-mid); }
+#export-pdf-btn:disabled { opacity: 0.5; cursor: default; }
+
 .section-label::after {
   content: "";
   flex: 1;
