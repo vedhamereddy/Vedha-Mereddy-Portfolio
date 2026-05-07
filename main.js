@@ -97,6 +97,19 @@ function initModal() {
   const closeBtn = modal.querySelector(".modal-close");
 
   function openModal(p, index) {
+    // Thumbnail
+    const thumbWrap = modal.querySelector(".modal-thumbnail-wrap");
+    if (thumbWrap) {
+      if (p.image) {
+        const expandBtn = `<button class="img-expand-btn" aria-label="Expand image"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button>`;
+        thumbWrap.innerHTML = `<span class="img-expand-wrap"><img src="${p.image}" alt="${p.title}" class="modal-thumbnail" />${expandBtn}</span>`;
+        thumbWrap.style.display = "block";
+      } else {
+        thumbWrap.innerHTML = "";
+        thumbWrap.style.display = "none";
+      }
+    }
+
     modal.querySelector(".modal-title").textContent   = p.title;
     modal.querySelector(".modal-summary").textContent = p.summary;
 
