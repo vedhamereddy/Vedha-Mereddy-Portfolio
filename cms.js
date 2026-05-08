@@ -234,17 +234,20 @@ function openEditModal(project, index) {
   // Thumbnail preview + focal point picker
   const previewWrap = modal.querySelector('#edit-image-preview-wrap');
   const previewImg  = modal.querySelector('#edit-image-preview');
+  const focalRow    = modal.querySelector('#focal-point-row');
   const currentPos  = editingProject.thumbnailPosition || 'center center';
+  const thumbIsVideo = /\.(mp4|webm|mov|ogg)(\?|$)/i.test(editingProject.image || '');
   if (previewWrap && previewImg) {
     if (editingProject.image) {
       previewImg.src = editingProject.image;
-      previewImg.style.objectPosition = currentPos;
+      if (!thumbIsVideo) previewImg.style.objectPosition = currentPos;
       previewWrap.style.display = 'block';
     } else {
       previewImg.src = '';
       previewWrap.style.display = 'none';
     }
   }
+  if (focalRow) focalRow.style.display = thumbIsVideo ? 'none' : '';
   modal.querySelectorAll('.fp-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.pos === currentPos);
   });
@@ -744,16 +747,40 @@ document.addEventListener('DOMContentLoaded', () => {
       const file = e.target.files[0];
       if (!file) return;
       pendingImageFile = file;
+      const isVideo     = file.type.startsWith('video/');
       const preview     = document.getElementById('edit-image-preview');
       const previewWrap = document.getElementById('edit-image-preview-wrap');
-      const pos = editingProject?.thumbnailPosition || 'center center';
-      preview.src = URL.createObjectURL(file);
-      preview.style.objectPosition = pos;
+      const focalRow    = document.getElementById('focal-point-row');
+      const objectUrl   = URL.createObjectURL(file);
+
+      // Swap preview element type if needed
+      if (isVideo) {
+        // Replace <img> preview with <video> preview
+        const vid = document.createElement('video');
+        vid.id = 'edit-image-preview';
+        vid.autoplay = true; vid.muted = true; vid.loop = true; vid.playsInline = true;
+        vid.style.cssText = preview.style.cssText;
+        vid.className = preview.className;
+        vid.src = objectUrl;
+        preview.replaceWith(vid);
+        if (focalRow) focalRow.style.display = 'none';
+      } else {
+        // Ensure we have an <img> (user may have previously selected a video)
+        const img = document.createElement('img');
+        img.id = 'edit-image-preview';
+        img.style.cssText = preview.style.cssText;
+        img.className = preview.className;
+        const pos = editingProject?.thumbnailPosition || 'center center';
+        img.src = objectUrl;
+        img.style.objectPosition = pos;
+        preview.replaceWith(img);
+        if (focalRow) focalRow.style.display = '';
+        document.querySelectorAll('.fp-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.pos === pos);
+        });
+      }
+
       if (previewWrap) previewWrap.style.display = 'block';
-      // Reset active focal point dot
-      document.querySelectorAll('.fp-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.pos === pos);
-      });
     });
   }
 

@@ -645,6 +645,16 @@ body.intro-done .hero-word {
 .project-card:hover .project-image {
   transform: scale(1.06);
 }
+.project-image-video {
+  object-fit: cover;
+}
+.modal-thumbnail-video {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
 .project-image.placeholder {
   background: var(--bg-alt);
 }
