@@ -1428,14 +1428,14 @@ footer .container {
 
 /* Rendered blocks in modal */
 .modal-block-heading {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: var(--accent);
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
 }
 .modal-block-text {
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.85;
   color: var(--ink-mid);
 }
