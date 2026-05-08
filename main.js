@@ -248,55 +248,6 @@ function initParallax() {
   }, { passive: true });
 }
 
-// ── Custom cursor ────────────────────────────────────────────
-function initCursor() {
-  const dot  = document.getElementById("cursor-dot");
-  const ring = document.getElementById("cursor-ring");
-  if (!dot || !ring) return;
-
-  let mx = 0, my = 0, rx = 0, ry = 0, prevRx = 0, prevRy = 0;
-  let hovering = false;
-
-  window.addEventListener("mousemove", e => {
-    mx = e.clientX;
-    my = e.clientY;
-    dot.style.left = mx + "px";
-    dot.style.top  = my + "px";
-  }, { passive: true });
-
-  (function loop() {
-    rx += (mx - rx) * 0.1;
-    ry += (my - ry) * 0.1;
-
-    const vx    = rx - prevRx;
-    const vy    = ry - prevRy;
-    prevRx = rx; prevRy = ry;
-
-    const speed   = Math.sqrt(vx * vx + vy * vy);
-    const angle   = Math.atan2(vy, vx) * (180 / Math.PI);
-    const base    = hovering ? 1.65 : 1;
-    const stretch = Math.min(base + speed * 0.13, base * 1.45);
-    const squish  = base / stretch;
-
-    ring.style.transform =
-      `translate(${rx - 15}px, ${ry - 15}px) rotate(${angle}deg) scaleX(${stretch}) scaleY(${squish})`;
-
-    requestAnimationFrame(loop);
-  })();
-
-  document.querySelectorAll("a, button").forEach(el => {
-    el.addEventListener("mouseenter", () => {
-      hovering = true;
-      dot.style.opacity = "0";
-      ring.style.borderColor = "rgba(255,255,255,0.85)";
-    });
-    el.addEventListener("mouseleave", () => {
-      hovering = false;
-      dot.style.opacity = "1";
-      ring.style.borderColor = "rgba(255,255,255,0.55)";
-    });
-  });
-}
 
 // ── Card spotlight ───────────────────────────────────────────
 function initCardSpotlight() {
@@ -320,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderFooter();
   initScrollEffects();
   initParallax();
-  initCursor();
   initModal();
   initLightbox();
   initCardSpotlight();
