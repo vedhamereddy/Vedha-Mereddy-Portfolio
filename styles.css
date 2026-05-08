@@ -640,6 +640,10 @@ body.intro-done .hero-word {
   object-position: center center;
   display: block;
   margin-bottom: 1rem;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.project-card:hover .project-image {
+  transform: scale(1.06);
 }
 .project-image.placeholder {
   background: var(--bg-alt);
