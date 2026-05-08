@@ -2,7 +2,7 @@
 function renderNav() {
   document.querySelector(".nav-logo").innerHTML =
     `<span class="nav-logo-first">${PORTFOLIO.name}</span>&nbsp;<span class="nav-logo-last">${PORTFOLIO.lastName}</span>`;
-  document.querySelector(".nav-links").innerHTML = ["about", "projects"]
+  document.querySelector(".nav-links").innerHTML = ["projects", "about"]
     .map(id => `<a href="#${id}">${id}</a>`).join("");
 }
 
