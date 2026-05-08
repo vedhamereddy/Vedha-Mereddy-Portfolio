@@ -909,7 +909,7 @@ body.intro-done .hero-word {
   display: block;
 }
 .modal-details {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 300;
   color: var(--ink-muted);
   line-height: 1.85;
@@ -1435,8 +1435,8 @@ footer .container {
   margin-bottom: 0.5rem;
 }
 .modal-block-text {
-  font-size: 0.9rem;
-  line-height: 1.8;
+  font-size: 0.95rem;
+  line-height: 1.85;
   color: var(--ink-mid);
 }
 .modal-block-text p { margin: 0 0 0.5rem; }
