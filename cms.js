@@ -267,6 +267,43 @@ function flushEditorContent() {
   joditInstances = {};
 }
 
+function blockInsertZone(index) {
+  return `<div class="block-insert-zone" id="insert-zone-${index}">
+    <div class="block-insert-line"></div>
+    <button class="block-insert-btn" type="button" onclick="toggleInsertMenu(${index})" title="Insert block here">+</button>
+    <div class="block-insert-line"></div>
+    <div class="block-insert-menu" id="insert-menu-${index}">
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'text')">Text</button>
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'heading')">Heading</button>
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'image')">Image</button>
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'image-row')">Image Row</button>
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'image-text')">Image + Text</button>
+      <button class="block-insert-type-btn" type="button" onclick="insertBlock(${index},'video')">Video</button>
+    </div>
+  </div>`;
+}
+
+function toggleInsertMenu(index) {
+  const zone = document.getElementById(`insert-zone-${index}`);
+  const isOpen = zone?.classList.contains('menu-open');
+  document.querySelectorAll('.block-insert-zone').forEach(z => z.classList.remove('menu-open'));
+  if (!isOpen) zone?.classList.add('menu-open');
+}
+
+function insertBlock(index, type) {
+  flushEditorContent();
+  const block = { type, content: '' };
+  if (type === 'image-row')  block.images = [];
+  if (type === 'image-text') { block.image = ''; block.imageWidth = '40%'; block.imagePosition = 'left'; }
+  if (type === 'video')      { block.loop = true; block.size = '100%'; }
+  editingBlocks.splice(index, 0, block);
+  renderBlockEditor();
+  setTimeout(() => {
+    const items = document.querySelectorAll('#blocks-container .block-item');
+    if (items[index]) items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, 50);
+}
+
 function renderBlockEditor() {
   flushEditorContent();
 
@@ -274,6 +311,7 @@ function renderBlockEditor() {
   if (!container) return;
 
   container.innerHTML = editingBlocks.map((block, i) => `
+    ${blockInsertZone(i)}
     <div class="block-item">
       <div class="block-actions">
         <button class="block-btn" onclick="moveBlock(${i}, -1)">↑</button>
@@ -372,7 +410,7 @@ function renderBlockEditor() {
                 : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
       }
     </div>
-  `).join('');
+  `).join('') + blockInsertZone(editingBlocks.length);
 
   // Initialize Jodit for text and image-text blocks
   const joditConfig = {
