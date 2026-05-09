@@ -581,11 +581,19 @@ function addRowImage(blockIndex) {
   if (!editingBlocks[blockIndex].images) editingBlocks[blockIndex].images = [];
   editingBlocks[blockIndex].images.push({ url: '' });
   renderBlockEditor();
+  const blockItems = document.querySelectorAll('#blocks-container .block-item');
+  if (blockItems[blockIndex]) {
+    blockItems[blockIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 function removeRowImage(blockIndex, imgIndex) {
   editingBlocks[blockIndex].images.splice(imgIndex, 1);
   renderBlockEditor();
+  const blockItems = document.querySelectorAll('#blocks-container .block-item');
+  if (blockItems[blockIndex]) {
+    blockItems[blockIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 function removeBlock(index) {
