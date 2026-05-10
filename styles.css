@@ -1223,6 +1223,36 @@ footer .container {
 .admin-edit-body {
   margin-bottom: 1.5rem;
 }
+.admin-hidden-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  margin-right: auto;
+  user-select: none;
+}
+.admin-hidden-toggle input { cursor: pointer; accent-color: var(--accent); }
+.project-card-hidden {
+  opacity: 0.4;
+  outline: 1px dashed rgba(255,255,255,0.2);
+}
+.project-hidden-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255,80,80,0.15);
+  color: #ff8080;
+  border: 1px solid rgba(255,80,80,0.3);
+  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
+  z-index: 10;
+}
 .admin-edit-footer {
   display: flex;
   gap: 0.75rem;

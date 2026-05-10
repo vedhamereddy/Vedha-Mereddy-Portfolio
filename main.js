@@ -37,10 +37,14 @@ function renderAbout() {
 
 // ── Render projects ──────────────────────────────────────────
 function renderProjects(projectsData) {
-  const projects = projectsData || window._projects || PORTFOLIO.projects;
+  const allProjects = projectsData || window._projects || PORTFOLIO.projects;
+  const isAdmin = document.body.classList.contains('admin-mode');
+  const projects = isAdmin ? allProjects : allProjects.filter(p => !p.hidden);
   const grid = document.querySelector(".projects-grid");
-  grid.innerHTML = projects.map((p, i) =>
-    `<article class="project-card fade-in" data-index="${i}">
+  grid.innerHTML = projects.map((p, i) => {
+    const realIndex = allProjects.indexOf(p);
+    return `<article class="project-card fade-in${p.hidden ? ' project-card-hidden' : ''}" data-index="${realIndex}">
+      ${p.hidden ? '<span class="project-hidden-badge">Hidden</span>' : ''}`;
       <button class="project-expand-btn" aria-label="View details">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
           <path d="M10 5 L14 1 M14 1 L10 1 M14 1 L14 5"/>
@@ -55,8 +59,8 @@ function renderProjects(projectsData) {
       }
       <h3 class="project-title">${p.title}</h3>
       <p class="project-summary">${p.summary}</p>
-    </article>`
-  ).join("");
+    </article>`;
+  }).join("");
 
 }
 

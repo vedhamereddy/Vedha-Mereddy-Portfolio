@@ -68,6 +68,7 @@ async function loadProjects() {
     link: p.link,
     blocks: p.blocks || [],
     order_index: p.order_index,
+    hidden: p.hidden || false,
   }));
 
   // Re-render with new data
@@ -211,6 +212,7 @@ function openEditModal(project, index) {
     order_index: index ?? (cmsProjects ? cmsProjects.length : 0),
     blocks: [],
     thumbnailPosition: 'center center',
+    hidden: false,
   };
 
   editingBlocks = JSON.parse(JSON.stringify(editingProject.blocks || [])).map(b =>
@@ -251,6 +253,8 @@ function openEditModal(project, index) {
   modal.querySelectorAll('.fp-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.pos === currentPos);
   });
+  const hiddenInput = modal.querySelector('#edit-hidden-input');
+  if (hiddenInput) hiddenInput.checked = editingProject.hidden || false;
 
   renderBlockEditor();
   modal.classList.add('open');
@@ -668,6 +672,7 @@ async function saveProject() {
       image_url: imageUrl,
       thumbnail_position: editingProject.thumbnailPosition || 'center center',
       order_index: editingProject.order_index || 0,
+      hidden: editingProject.hidden || false,
     };
 
     if (editingProject.id) {
@@ -791,6 +796,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (previewWrap) previewWrap.style.display = 'block';
     });
   }
+
+  // Hidden toggle
+  document.getElementById('edit-hidden-input')?.addEventListener('change', e => {
+    if (editingProject) editingProject.hidden = e.target.checked;
+  });
 
   // Focal point grid
   document.getElementById('focal-point-grid')?.addEventListener('click', e => {
