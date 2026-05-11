@@ -185,6 +185,16 @@ function initModal() {
     modal.querySelector(".modal-tags").innerHTML = p.tags
       .map(t => `<span class="project-tag">${t}</span>`).join("");
 
+    const linkEl = modal.querySelector(".modal-link");
+    if (linkEl) {
+      if (p.link) {
+        linkEl.href = p.link;
+        linkEl.classList.remove("hidden");
+      } else {
+        linkEl.classList.add("hidden");
+      }
+    }
+
     modal.setAttribute("aria-hidden", "false");
     modal.classList.add("open");
     document.body.style.overflow = "hidden";

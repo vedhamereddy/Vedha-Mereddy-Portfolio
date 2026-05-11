@@ -926,7 +926,8 @@ body.intro-done .hero-word {
 }
 .modal-link {
   align-self: flex-start;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
 }
 .modal-link.hidden { display: none; }
 
