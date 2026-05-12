@@ -414,7 +414,7 @@ function renderBlockEditor() {
                        </label>
                      </div>
                    </div>`
-                : `<textarea class="block-content" placeholder="Section title" data-index="${i}">${block.content || ''}</textarea>`
+                : `<textarea class="block-content" placeholder="Section title" data-index="${i}" spellcheck="true">${block.content || ''}</textarea>`
       }
     </div>
   `).join('') + blockInsertZone(editingBlocks.length);
@@ -427,6 +427,7 @@ function renderBlockEditor() {
     showCharsCounter: false,
     showWordsCounter: false,
     toolbarAdaptive: false,
+    spellcheck: true,
   };
 
   editingBlocks.forEach((block, i) => {
