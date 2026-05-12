@@ -111,13 +111,22 @@ function initModal() {
   const closeBtn = modal.querySelector(".modal-close");
 
   function openModal(p, index) {
+    const muteBtn = `<button class="video-mute-btn muted" aria-label="Unmute">
+      <svg class="icon-mute" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 4L5 7H2v2h3l4 3V4z"/><line x1="13" y1="4" x2="7" y2="12"/>
+      </svg>
+      <svg class="icon-sound" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 4L5 7H2v2h3l4 3V4z"/><path d="M12 6a3 3 0 010 4"/>
+      </svg>
+    </button>`;
+
     // Thumbnail
     const thumbWrap = modal.querySelector(".modal-thumbnail-wrap");
     if (thumbWrap) {
       if (p.image) {
         const pos = p.thumbnailPosition || 'center center';
         if (isVideoUrl(p.image)) {
-          thumbWrap.innerHTML = `<video src="${p.image}" class="modal-thumbnail modal-thumbnail-video" autoplay muted loop playsinline></video>`;
+          thumbWrap.innerHTML = `<div class="video-wrap"><video src="${p.image}" class="modal-thumbnail modal-thumbnail-video" autoplay muted loop playsinline></video>${muteBtn}</div>`;
         } else {
           const expandBtn = `<button class="img-expand-btn" aria-label="Expand image"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4.5V1h3.5M7.5 1H11v3.5M11 7.5V11H7.5M4.5 11H1V7.5"/></svg></button>`;
           thumbWrap.innerHTML = `<span class="img-expand-wrap"><img src="${p.image}" alt="${p.title}" class="modal-thumbnail" style="object-position:${pos}" />${expandBtn}</span>`;
@@ -160,7 +169,10 @@ function initModal() {
           const wrapStyle = align === 'center' ? 'margin:0 auto;' : align === 'right' ? 'margin-left:auto;' : '';
           const loopAttr = block.loop !== false ? 'loop' : '';
           return `<div style="width:${block.size||'100%'};${wrapStyle}">
-            <video src="${block.content}" class="modal-block-video" autoplay muted playsinline ${loopAttr} style="width:100%"></video>
+            <div class="video-wrap">
+              <video src="${block.content}" class="modal-block-video" autoplay muted playsinline ${loopAttr} style="width:100%"></video>
+              ${muteBtn}
+            </div>
           </div>`;
         }
         if (block.type === 'image-text') {
@@ -209,6 +221,18 @@ function initModal() {
   closeBtn.addEventListener("click", closeModal);
   backdrop.addEventListener("click", closeModal);
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+  // Mute toggle for videos inside the modal
+  modal.addEventListener("click", e => {
+    const btn = e.target.closest(".video-mute-btn");
+    if (!btn) return;
+    e.stopPropagation();
+    const video = btn.closest(".video-wrap")?.querySelector("video");
+    if (!video) return;
+    video.muted = !video.muted;
+    btn.classList.toggle("muted", video.muted);
+    btn.setAttribute("aria-label", video.muted ? "Unmute" : "Mute");
+  });
 
   // Event delegation on the grid — works even after CMS re-renders the cards
   const grid = document.querySelector(".projects-grid");

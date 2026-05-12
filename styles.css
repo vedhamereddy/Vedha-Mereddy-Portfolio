@@ -655,6 +655,34 @@ body.intro-done .hero-word {
   border-radius: 6px;
   display: block;
 }
+.video-wrap {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+.video-mute-btn {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.2s;
+  z-index: 2;
+  padding: 0;
+}
+.video-mute-btn:hover { background: rgba(0, 0, 0, 0.82); }
+.video-mute-btn svg { width: 13px; height: 13px; }
+.video-mute-btn .icon-sound { display: none; }
+.video-mute-btn:not(.muted) .icon-mute { display: none; }
+.video-mute-btn:not(.muted) .icon-sound { display: block; }
 .project-image.placeholder {
   background: var(--bg-alt);
 }
