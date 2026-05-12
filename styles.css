@@ -1582,6 +1582,24 @@ footer .container {
   user-select: none;
 }
 
+/* ── Image captions ─────────────────────────────────────────── */
+.img-figure {
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0;
+}
+.img-figure .img-expand-wrap {
+  margin: 0;
+}
+.img-caption {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-top: 0.45rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* ── Image expand wrapper & button ──────────────────────────── */
 .img-expand-wrap {
   position: relative;

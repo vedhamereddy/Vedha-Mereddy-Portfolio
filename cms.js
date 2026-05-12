@@ -355,6 +355,7 @@ function renderBlockEditor() {
                    <option value="right"  ${block.align==='right' ?'selected':''}>Right</option>
                  </select>
                </div>
+               <input type="text" class="block-image-caption" data-index="${i}" placeholder="Caption (optional)" value="${block.caption || ''}" spellcheck="true" style="margin-top:0.5rem;width:100%" />
              </div>`
           : block.type === 'image-row'
             ? `<div class="block-image-row-editor">
@@ -367,6 +368,7 @@ function renderBlockEditor() {
                          <input type="file" accept="image/*" class="block-row-image-input" data-index="${i}" data-img-index="${j}" />
                        </label>
                        <button class="admin-btn danger" onclick="removeRowImage(${i},${j})" style="margin-top:0.25rem;">Remove</button>
+                       <input type="text" class="block-row-caption" data-index="${i}" data-img-index="${j}" placeholder="Caption (optional)" value="${img.caption || ''}" spellcheck="true" style="margin-top:0.25rem;width:100%" />
                      </div>
                    `).join('')}
                  </div>
@@ -569,6 +571,20 @@ function renderBlockEditor() {
     input.addEventListener('input', e => {
       const i = parseInt(e.target.dataset.index);
       editingBlocks[i].content = e.target.value;
+    });
+  });
+
+  container.querySelectorAll('.block-image-caption').forEach(input => {
+    input.addEventListener('input', e => {
+      editingBlocks[parseInt(e.target.dataset.index)].caption = e.target.value;
+    });
+  });
+
+  container.querySelectorAll('.block-row-caption').forEach(input => {
+    input.addEventListener('input', e => {
+      const i = parseInt(e.target.dataset.index);
+      const j = parseInt(e.target.dataset.imgIndex);
+      editingBlocks[i].images[j].caption = e.target.value;
     });
   });
 }

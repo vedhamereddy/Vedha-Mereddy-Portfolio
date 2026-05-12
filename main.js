@@ -150,18 +150,24 @@ function initModal() {
         if (block.type === 'image') {
           const align = block.align || 'left';
           const wrapStyle = align === 'center' ? 'margin:0 auto;' : align === 'right' ? 'margin-left:auto;' : '';
-          return `<span class="img-expand-wrap" style="width:${block.size||'100%'};${wrapStyle}">
-            <img src="${block.content}" alt="" class="modal-block-image" style="width:100%" />
-            ${expandBtn}
-          </span>`;
+          return `<figure class="img-figure" style="width:${block.size||'100%'};${wrapStyle}">
+            <span class="img-expand-wrap">
+              <img src="${block.content}" alt="" class="modal-block-image" style="width:100%" />
+              ${expandBtn}
+            </span>
+            ${block.caption ? `<figcaption class="img-caption">${block.caption}</figcaption>` : ''}
+          </figure>`;
         }
         if (block.type === 'image-row') {
           const imgs = (block.images || []).filter(img => img.url);
           return `<div class="modal-image-row">${imgs.map(img =>
-            `<span class="img-expand-wrap" style="flex:1;min-width:0">
-              <img src="${img.url}" alt="" class="modal-image-row-item" style="width:100%" />
-              ${expandBtn}
-            </span>`
+            `<figure class="img-figure" style="flex:1;min-width:0">
+              <span class="img-expand-wrap">
+                <img src="${img.url}" alt="" class="modal-image-row-item" style="width:100%" />
+                ${expandBtn}
+              </span>
+              ${img.caption ? `<figcaption class="img-caption">${img.caption}</figcaption>` : ''}
+            </figure>`
           ).join('')}</div>`;
         }
         if (block.type === 'video') {
