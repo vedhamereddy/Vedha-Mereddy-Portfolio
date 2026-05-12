@@ -356,8 +356,8 @@ async function exportProjectsPDF() {
         y += 6;
       }
 
-      // Thumbnail — 50% wide, shrinks to fit remaining page space
-      if (p.image) {
+      // Thumbnail — 50% wide, shrinks to fit remaining page space (skip videos)
+      if (p.image && !isVideoUrl(p.image)) {
         const img = await loadImageFit(p.image, CW * 0.5, 56);
         if (img) {
           try { doc.addImage(img.data, img.fmt, M + (CW - img.w) / 2, y, img.w, img.h, '', 'FAST'); } catch {}
